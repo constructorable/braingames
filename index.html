@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Logikspiele App – 5 Gedächtnisspiele für Gehirntraining">
+    <title>BrainFit – Logikspiele</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        
+        <!-- Header -->
+        <header id="app-header">
+            <button id="btn-back" class="header-btn hidden" aria-label="Zurück">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1 id="header-title">BrainFit</h1>
+            <button id="btn-stats" class="header-btn" aria-label="Statistiken">
+                <i class="fas fa-chart-bar"></i>
+            </button>
+        </header>
+
+        <!-- Hauptmenü -->
+        <main id="main-menu" class="screen active">
+            <div class="menu-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h2>Wähle dein Training</h2>
+                <p class="subtitle">5 Spiele – 10 Level – Unendliche Herausforderung</p>
+            </div>
+
+            <div class="game-grid">
+                <button class="game-card" data-game="numbers">
+                    <div class="game-icon">
+                        <i class="fas fa-hashtag"></i>
+                    </div>
+                    <div class="game-info">
+                        <h3>Zahlenfolge</h3>
+                        <p>Merke dir die Zahlenreihe</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="numbers">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="letters">
+                    <div class="game-icon">
+                        <i class="fas fa-font"></i>
+                    </div>
+                    <div class="game-info">
+                        <h3>Buchstabenfolge</h3>
+                        <p>Merke dir die Buchstaben</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="letters">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="colors">
+                    <div class="game-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="game-info">
+                        <h3>Farbsequenz</h3>
+                        <p>Senso-Style Farbmerken</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="colors">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="pattern">
+                    <div class="game-icon">
+                        <i class="fas fa-th"></i>
+                    </div>
+                    <div class="game-info">
+                        <h3>Muster-Memory</h3>
+                        <p>Merke dir das Muster</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="pattern">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="math">
+                    <div class="game-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <div class="game-info">
+                        <h3>Rechenfolge</h3>
+                        <p>Merke dir die Ergebnisse</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="math">0</span>
+                    </div>
+                </button>
+            </div>
+
+            <div class="menu-footer">
+                <button id="btn-tutorial" class="btn-secondary">
+                    <i class="fas fa-question-circle"></i>
+                    Anleitung
+                </button>
+            </div>
+        </main>
+
+        <!-- Spielmodus-Auswahl -->
+        <section id="mode-select" class="screen">
+            <div class="mode-container">
+                <h2 id="mode-game-title">Spielname</h2>
+                
+                <div class="level-select">
+                    <h3>Schwierigkeitsstufe</h3>
+                    <div class="level-grid">
+                        <!-- Level 1-10 werden per JS generiert -->
+                    </div>
+                </div>
+
+                <div class="mode-buttons">
+                    <button class="mode-btn" data-mode="endless">
+                        <i class="fas fa-infinity"></i>
+                        <span>Endlos</span>
+                        <small>Bis zum Fehler</small>
+                    </button>
+                    <button class="mode-btn" data-mode="timed">
+                        <i class="fas fa-stopwatch"></i>
+                        <span>Zeitdruck</span>
+                        <small>Begrenzte Zeit</small>
+                    </button>
+                    <button class="mode-btn" data-mode="relaxed">
+                        <i class="fas fa-leaf"></i>
+                        <span>Entspannt</span>
+                        <small>Ohne Druck</small>
+                    </button>
+                </div>
+
+                <button id="btn-start-game" class="btn-primary btn-large">
+                    <i class="fas fa-play"></i>
+                    Spiel starten
+                </button>
+            </div>
+        </section>
+
+        <!-- Spiel-Bereich -->
+        <section id="game-area" class="screen">
+            <div class="game-header">
+                <div class="game-stat">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Level <span id="current-level">1</span></span>
+                </div>
+                <div class="game-stat">
+                    <i class="fas fa-star"></i>
+                    <span>Punkte: <span id="current-score">0</span></span>
+                </div>
+                <div class="game-stat" id="timer-display">
+                    <i class="fas fa-clock"></i>
+                    <span id="current-timer">--</span>
+                </div>
+            </div>
+
+            <div id="game-content">
+                <!-- Spielinhalt wird dynamisch geladen -->
+            </div>
+
+            <div id="game-input">
+                <!-- Eingabebereich wird dynamisch geladen -->
+            </div>
+
+            <div id="game-feedback" class="hidden">
+                <div class="feedback-content">
+                    <i class="feedback-icon"></i>
+                    <p class="feedback-text"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Spielende / Ergebnis -->
+        <section id="game-result" class="screen">
+            <div class="result-container">
+                <div class="result-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h2>Spiel beendet!</h2>
+                
+                <div class="result-stats">
+                    <div class="result-stat">
+                        <span class="stat-label">Punktzahl</span>
+                        <span class="stat-value" id="result-score">0</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="stat-label">Highscore</span>
+                        <span class="stat-value" id="result-highscore">0</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="stat-label">Erreichte Runde</span>
+                        <span class="stat-value" id="result-round">0</span>
+                    </div>
+                </div>
+
+                <div class="result-badge hidden" id="new-highscore-badge">
+                    <i class="fas fa-crown"></i>
+                    Neuer Highscore!
+                </div>
+
+                <div class="result-actions">
+                    <button id="btn-play-again" class="btn-primary">
+                        <i class="fas fa-redo"></i>
+                        Nochmal spielen
+                    </button>
+                    <button id="btn-back-menu" class="btn-secondary">
+                        <i class="fas fa-home"></i>
+                        Hauptmenü
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistiken -->
+        <section id="stats-screen" class="screen">
+            <div class="stats-container">
+                <h2>Deine Statistiken</h2>
+
+                <div class="stats-overview">
+                    <div class="stats-card">
+                        <i class="fas fa-gamepad"></i>
+                        <span class="stats-number" id="total-games">0</span>
+                        <span class="stats-label">Spiele gespielt</span>
+                    </div>
+                    <div class="stats-card">
+                        <i class="fas fa-star"></i>
+                        <span class="stats-number" id="total-score">0</span>
+                        <span class="stats-label">Gesamtpunkte</span>
+                    </div>
+                    <div class="stats-card">
+                        <i class="fas fa-fire"></i>
+                        <span class="stats-number" id="best-streak">0</span>
+                        <span class="stats-label">Beste Serie</span>
+                    </div>
+                </div>
+
+                <div class="stats-charts">
+                    <div class="chart-container">
+                        <h3>Fortschritt (letzte 7 Tage)</h3>
+                        <div id="progress-chart" class="chart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Highscores pro Spiel</h3>
+                        <div id="highscore-chart" class="chart"></div>
+                    </div>
+                </div>
+
+                <div class="stats-history">
+                    <h3>Letzte Spiele</h3>
+                    <div id="game-history" class="history-list">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                </div>
+
+                <button id="btn-clear-stats" class="btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Statistiken löschen
+                </button>
+            </div>
+        </section>
+
+        <!-- Tutorial Modal -->
+        <div id="tutorial-modal" class="modal hidden">
+            <div class="modal-content">
+                <button class="modal-close" aria-label="Schließen">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="tutorial-slides">
+                    <div class="tutorial-slide active" data-slide="0">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3>Willkommen bei BrainFit!</h3>
+                        <p>Trainiere dein Gedächtnis mit 5 verschiedenen Spielen. Jedes Spiel fordert unterschiedliche kognitive Fähigkeiten.</p>
+                    </div>
+                    <div class="tutorial-slide" data-slide="1">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h3>10 Schwierigkeitsstufen</h3>
+                        <p>Beginne einfach und steigere dich. Höhere Level bedeuten längere Sequenzen und kürzere Anzeigezeiten.</p>
+                    </div>
+                    <div class="tutorial-slide" data-slide="2">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-gamepad"></i>
+                        </div>
+                        <h3>3 Spielmodi</h3>
+                        <p><strong>Endlos:</strong> Spiele bis zum ersten Fehler.<br>
+                           <strong>Zeitdruck:</strong> Begrenzte Zeit pro Runde.<br>
+                           <strong>Entspannt:</strong> Übe ohne Stress.</p>
+                    </div>
+                    <div class="tutorial-slide" data-slide="3">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h3>Verfolge deinen Fortschritt</h3>
+                        <p>Alle Ergebnisse werden gespeichert. Vergleiche deine Highscores und beobachte deine Verbesserung über Zeit.</p>
+                    </div>
+                </div>
+
+                <div class="tutorial-nav">
+                    <div class="tutorial-dots">
+                        <span class="dot active" data-slide="0"></span>
+                        <span class="dot" data-slide="1"></span>
+                        <span class="dot" data-slide="2"></span>
+                        <span class="dot" data-slide="3"></span>
+                    </div>
+                    <button id="btn-tutorial-next" class="btn-primary">
+                        Weiter <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="hidden">
+            <div class="spinner"></div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Module -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

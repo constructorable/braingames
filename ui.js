@@ -4,6 +4,7 @@
    ========================================= */
 
 import * as Storage from './storage.js';
+import * as Sudoku from './sudoku.js';
 
 // DOM-Referenzen (gecached)
 const elements = {

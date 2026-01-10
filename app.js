@@ -14,6 +14,9 @@ import * as ColorGame from './colorSequence.js';
 import * as PatternGame from './patternMemory.js';
 import * as MathGame from './mathSequence.js';
 import * as Sudoku from './sudoku.js';
+import * as ChainReaction from './chainReaction.js';
+import * as MindMaze from './mindMaze.js';
+import * as Theme from './theme.js';
 
 // Spiele-Registry
 const GAMES = {
@@ -35,6 +38,7 @@ const appState = {
  * App initialisieren
  */
 function init() {
+    Theme.init();  // NEU: Theme als erstes initialisieren
     UI.init();
     setupEventListeners();
     checkFirstVisit();
@@ -49,52 +53,58 @@ function setupEventListeners() {
     // Spielkarten im Hauptmenü
 
 
-document.querySelectorAll('.game-card').forEach(card => {
-    card.addEventListener('click', () => {
-        const gameId = card.dataset.game;
-        if (gameId === 'sudoku') {
-            Sudoku.init();
-            Sudoku.show();
-        } else {
-            selectGame(gameId);
-        }
+    document.querySelectorAll('.game-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const gameId = card.dataset.game;
+            if (gameId === 'sudoku') {
+                Sudoku.init();
+                Sudoku.show();
+            } else if (gameId === 'chain') {
+                ChainReaction.init();
+                ChainReaction.show();
+            } else if (gameId === 'mindmaze') {
+                MindMaze.init();
+                MindMaze.show();
+            } else {
+                selectGame(gameId);
+            }
+        });
     });
-});
 
 
 
-    
+
     // Tutorial-Button
     document.getElementById('btn-tutorial').addEventListener('click', () => {
         UI.openTutorial();
     });
-    
+
     // Statistiken-Button
     document.getElementById('btn-stats').addEventListener('click', () => {
         showStats();
     });
-    
+
     // Modus-Auswahl
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             selectMode(btn.dataset.mode);
         });
     });
-    
+
     // Spiel starten
     document.getElementById('btn-start-game').addEventListener('click', () => {
         startGame();
     });
-    
+
     // Ergebnis-Aktionen
     document.getElementById('btn-play-again').addEventListener('click', () => {
         startGame();
     });
-    
+
     document.getElementById('btn-back-menu').addEventListener('click', () => {
         returnToMenu();
     });
-    
+
     // Statistik-Events
     Stats.setupStatsEvents(() => {
         UI.updateHighscoreDisplays();
@@ -117,24 +127,24 @@ function checkFirstVisit() {
  */
 function selectGame(gameId) {
     if (!GAMES[gameId]) return;
-    
+
     appState.currentGame = gameId;
     appState.selectedLevel = 1;
     appState.selectedMode = 'endless';
-    
+
     // Titel setzen
     document.getElementById('mode-game-title').textContent = GAMES[gameId].title;
-    
+
     // Level-Buttons rendern
     UI.renderLevelButtons(10, appState.selectedLevel, (level) => {
         appState.selectedLevel = level;
     });
-    
+
     // Standard-Modus markieren
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.mode === appState.selectedMode);
     });
-    
+
     // Screen wechseln
     UI.showScreen('mode-select', { title: GAMES[gameId].title });
 }
@@ -144,7 +154,7 @@ function selectGame(gameId) {
  */
 function selectMode(mode) {
     appState.selectedMode = mode;
-    
+
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.mode === mode);
     });
@@ -156,10 +166,10 @@ function selectMode(mode) {
 function startGame() {
     const game = GAMES[appState.currentGame];
     if (!game) return;
-    
+
     UI.resetHistory();
     UI.showScreen('game-area', { title: game.title });
-    
+
     // Spiel starten
     game.module.start(
         {
@@ -179,13 +189,13 @@ function handleGameComplete(result) {
     // Highscore prüfen und speichern
     const isNewHighscore = Storage.updateHighscore(result.game, result.score);
     const currentHighscore = Storage.getHighscore(result.game);
-    
+
     // Ergebnis speichern
     Storage.addGameResult(result);
-    
+
     // Highscore-Anzeigen aktualisieren
     UI.updateHighscoreDisplays();
-    
+
     // Ergebnis-Screen anzeigen
     UI.renderResult({
         score: result.score,
@@ -193,7 +203,7 @@ function handleGameComplete(result) {
         round: result.round,
         isNewHighscore
     });
-    
+
     UI.showScreen('game-result', { title: 'Ergebnis' });
 }
 
@@ -213,10 +223,12 @@ function returnToMenu() {
     if (appState.currentGame && GAMES[appState.currentGame]) {
         GAMES[appState.currentGame].module.stop();
     }
-    
+
     // NEU: Sudoku ausblenden
     Sudoku.hide();
-    
+    ChainReaction.hide();
+    MindMaze.hide();
+
     UI.resetHistory();
     UI.showScreen('main-menu', { addToHistory: false });
 }

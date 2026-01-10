@@ -13,6 +13,7 @@ import * as LetterGame from './letterSequence.js';
 import * as ColorGame from './colorSequence.js';
 import * as PatternGame from './patternMemory.js';
 import * as MathGame from './mathSequence.js';
+import * as Sudoku from './sudoku.js';
 
 // Spiele-Registry
 const GAMES = {
@@ -46,12 +47,22 @@ function init() {
  */
 function setupEventListeners() {
     // Spielkarten im Hauptmenü
-    document.querySelectorAll('.game-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const gameId = card.dataset.game;
+
+
+document.querySelectorAll('.game-card').forEach(card => {
+    card.addEventListener('click', () => {
+        const gameId = card.dataset.game;
+        if (gameId === 'sudoku') {
+            Sudoku.init();
+            Sudoku.show();
+        } else {
             selectGame(gameId);
-        });
+        }
     });
+});
+
+
+
     
     // Tutorial-Button
     document.getElementById('btn-tutorial').addEventListener('click', () => {
@@ -202,6 +213,9 @@ function returnToMenu() {
     if (appState.currentGame && GAMES[appState.currentGame]) {
         GAMES[appState.currentGame].module.stop();
     }
+    
+    // NEU: Sudoku ausblenden
+    Sudoku.hide();
     
     UI.resetHistory();
     UI.showScreen('main-menu', { addToHistory: false });

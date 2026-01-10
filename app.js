@@ -16,7 +16,6 @@ import * as MathGame from './mathSequence.js';
 import * as Sudoku from './sudoku.js';
 import * as ChainReaction from './chainReaction.js';
 import * as MindMaze from './mindMaze.js';
-import * as Theme from './theme.js';
 
 // Spiele-Registry
 const GAMES = {
@@ -38,11 +37,10 @@ const appState = {
  * App initialisieren
  */
 function init() {
-    Theme.init();  // NEU: Theme als erstes initialisieren
     UI.init();
     setupEventListeners();
     checkFirstVisit();
-    
+
     console.log('BrainFit App initialisiert');
 }
 

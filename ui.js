@@ -5,6 +5,7 @@
 
 import * as Storage from './storage.js';
 import * as Sudoku from './sudoku.js';
+import * as towerdefense from './towerdefense.js';
 
 // DOM-Referenzen (gecached)
 const elements = {

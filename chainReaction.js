@@ -3,30 +3,47 @@
    Tippe die Symbole in der Reihenfolge ihres Erscheinens
    ========================================= */
 
-// Schwierigkeitsstufen
-const DIFFICULTY = {
-    easy: { 
-        name: 'Leicht', 
-        spawnInterval: 1500,    // Zeit zwischen Spawns
-        symbolLifetime: 3000,   // Wie lange Symbol sichtbar
-        maxSymbols: 4,          // Max gleichzeitig sichtbar
-        shrinkWarning: true     // Schrumpf-Warnung
-    },
-    medium: { 
-        name: 'Mittel', 
-        spawnInterval: 1200, 
-        symbolLifetime: 2500,
-        maxSymbols: 5,
-        shrinkWarning: true
-    },
-    hard: { 
-        name: 'Schwer', 
-        spawnInterval: 900, 
-        symbolLifetime: 2000,
-        maxSymbols: 6,
-        shrinkWarning: false
-    }
+/* -----------------------------------------
+   KONFIGURATION - Hier Werte anpassen!
+   ----------------------------------------- */
+
+// ÄNDERUNG: Manuelle Konfiguration der Geschwindigkeiten pro Level
+const LEVEL_SETTINGS = {
+    // spawnInterval: Zeit in ms zwischen neuen Symbolen (höher = langsamer)
+    // symbolLifetime: Zeit in ms bis Symbol verschwindet (höher = mehr Zeit)
+    // maxSymbols: Maximale Anzahl gleichzeitig sichtbarer Symbole
+    // shrinkWarning: Schrumpf-Animation vor Ablauf anzeigen (true/false)
+    
+    1:  { spawnInterval: 3000, symbolLifetime: 6000, maxSymbols: 2, shrinkWarning: true },
+    2:  { spawnInterval: 2700, symbolLifetime: 5500, maxSymbols: 2, shrinkWarning: true },
+    3:  { spawnInterval: 2400, symbolLifetime: 5000, maxSymbols: 3, shrinkWarning: true },
+    4:  { spawnInterval: 2200, symbolLifetime: 4500, maxSymbols: 3, shrinkWarning: true },
+    5:  { spawnInterval: 2000, symbolLifetime: 4000, maxSymbols: 4, shrinkWarning: true },
+    6:  { spawnInterval: 1800, symbolLifetime: 3500, maxSymbols: 4, shrinkWarning: true },
+    7:  { spawnInterval: 1600, symbolLifetime: 3000, maxSymbols: 5, shrinkWarning: true },
+    8:  { spawnInterval: 1400, symbolLifetime: 2500, maxSymbols: 5, shrinkWarning: false },
+    9:  { spawnInterval: 1200, symbolLifetime: 2200, maxSymbols: 6, shrinkWarning: false },
+    10: { spawnInterval: 600, symbolLifetime: 1200, maxSymbols: 15, shrinkWarning: false }
 };
+
+// ÄNDERUNG: Symbol-Größe konfigurierbar (in Pixel)
+const SYMBOL_CONFIG = {
+    size: 48,           // Größe des Symbols in px (vorher 60)
+    orderBadgeSize: 20, // Größe des Nummern-Badges in px (vorher 24)
+    iconSize: 1.4,      // Icon-Größe in rem (vorher 1.8)
+    minDistance: 58     // Mindestabstand zwischen Symbolen in px (vorher 70)
+};
+
+// Punkteberechnung
+const SCORE_CONFIG = {
+    basePoints: 10,
+    comboBonus: 5,          // Bonus alle 3 Combos
+    levelMultiplierStep: 0.15  // Pro Level: 1 + (level-1) * step
+};
+
+/* -----------------------------------------
+   ENDE KONFIGURATION
+   ----------------------------------------- */
 
 // Verfügbare Symbole (Font Awesome Icons)
 const SYMBOLS = [
@@ -46,14 +63,14 @@ const SYMBOLS = [
 
 // Spielzustand
 let state = {
-    difficulty: 'easy',
+    difficulty: 1,
     score: 0,
     combo: 0,
     maxCombo: 0,
     lives: 3,
-    activeSymbols: [],      // { id, icon, color, x, y, order, element, timeout }
-    nextOrder: 1,           // Nächste erwartete Reihenfolge
-    spawnCounter: 0,        // ID-Zähler
+    activeSymbols: [],
+    nextOrder: 1,
+    spawnCounter: 0,
     spawnTimer: null,
     isPlaying: false,
     isPaused: false,
@@ -109,23 +126,19 @@ function renderScreen() {
                     </div>
                 </div>
                 
-                <div class="difficulty-buttons">
-                    <button class="difficulty-btn" data-difficulty="easy">
-                        <i class="fas fa-feather"></i>
-                        <span>Leicht</span>
-                        <small>Langsam • Mehr Zeit</small>
-                    </button>
-                    <button class="difficulty-btn" data-difficulty="medium">
-                        <i class="fas fa-fire"></i>
-                        <span>Mittel</span>
-                        <small>Schneller • Weniger Zeit</small>
-                    </button>
-                    <button class="difficulty-btn" data-difficulty="hard">
-                        <i class="fas fa-meteor"></i>
-                        <span>Schwer</span>
-                        <small>Rasant • Keine Gnade</small>
-                    </button>
+                <div class="chain-level-section">
+                    <h3>Schwierigkeitsstufe wählen</h3>
+                    <div class="chain-level-grid">
+                        ${Array.from({length: 10}, (_, i) => `
+                            <button class="chain-level-btn" data-level="${i + 1}">${i + 1}</button>
+                        `).join('')}
+                    </div>
                 </div>
+                
+                <button id="btn-chain-start" class="btn-primary btn-large">
+                    <i class="fas fa-play"></i>
+                    Spiel starten
+                </button>
             </div>
             
             <!-- Spielbereich -->
@@ -134,6 +147,10 @@ function renderScreen() {
                     <div class="chain-stat">
                         <i class="fas fa-star"></i>
                         <span id="chain-score">0</span>
+                    </div>
+                    <div class="chain-stat">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Level <span id="chain-level">1</span></span>
                     </div>
                     <div class="chain-stat combo">
                         <i class="fas fa-fire-alt"></i>
@@ -149,7 +166,6 @@ function renderScreen() {
                 </div>
                 
                 <div id="chain-arena" class="chain-arena">
-                    <!-- Symbole erscheinen hier -->
                     <div class="arena-hint" id="arena-hint">
                         <i class="fas fa-hand-pointer"></i>
                         <span>Tippe das erste Symbol!</span>
@@ -207,13 +223,14 @@ function renderScreen() {
 }
 
 /**
- * Fügt CSS-Styles hinzu
+ * Fügt CSS-Styles hinzu - verwendet SYMBOL_CONFIG für dynamische Größen
  */
 function addStyles() {
     if (document.getElementById('chain-styles')) return;
     
     const style = document.createElement('style');
     style.id = 'chain-styles';
+    // ÄNDERUNG: Dynamische Werte aus SYMBOL_CONFIG
     style.textContent = `
         .chain-container {
             display: flex;
@@ -290,51 +307,59 @@ function addStyles() {
             text-align: center;
         }
         
-        .difficulty-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-md);
+        /* Level-Auswahl Grid */
+        .chain-level-section {
             width: 100%;
             max-width: 320px;
-        }
-        
-        .chain-menu .difficulty-btn {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-md);
-            padding: var(--spacing-lg);
-            background: var(--color-bg-card);
-            border: 2px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            text-align: left;
-            transition: all var(--transition-fast);
-        }
-        
-        .chain-menu .difficulty-btn:active {
-            transform: scale(0.98);
-            border-color: var(--color-primary);
-        }
-        
-        .chain-menu .difficulty-btn i {
-            font-size: var(--font-size-2xl);
-            width: 40px;
             text-align: center;
         }
         
-        .chain-menu .difficulty-btn[data-difficulty="easy"] i { color: #22c55e; }
-        .chain-menu .difficulty-btn[data-difficulty="medium"] i { color: #f59e0b; }
-        .chain-menu .difficulty-btn[data-difficulty="hard"] i { color: #ef4444; }
-        
-        .chain-menu .difficulty-btn span {
-            font-size: var(--font-size-lg);
-            font-weight: 600;
-            display: block;
+        .chain-level-section h3 {
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--spacing-md);
+            color: var(--color-text-light);
         }
         
-        .chain-menu .difficulty-btn small {
-            font-size: var(--font-size-sm);
-            color: var(--color-text-light);
-            font-weight: 400;
+        .chain-level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: var(--spacing-sm);
+        }
+        
+        .chain-level-btn {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            background: var(--color-bg-card);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+            transition: all var(--transition-fast);
+        }
+        
+        .chain-level-btn:hover {
+            border-color: var(--color-chain);
+        }
+        
+        .chain-level-btn.selected {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border-color: transparent;
+            color: white;
+            box-shadow: var(--shadow-md), 0 4px 15px rgba(249, 115, 22, 0.4);
+            transform: scale(1.05);
+        }
+        
+        .chain-level-btn:active {
+            transform: scale(0.95);
+        }
+        
+        #btn-chain-start {
+            width: 100%;
+            max-width: 320px;
         }
         
         /* Spielbereich */
@@ -361,7 +386,7 @@ function addStyles() {
             display: flex;
             align-items: center;
             gap: var(--spacing-xs);
-            font-size: var(--font-size-lg);
+            font-size: var(--font-size-base);
             font-weight: 700;
         }
         
@@ -403,11 +428,11 @@ function addStyles() {
         
         .arena-hint.hidden { display: none; }
         
-        /* Symbole */
+        /* ÄNDERUNG: Symbole mit konfigurierbarer Größe */
         .chain-symbol {
             position: absolute;
-            width: 60px;
-            height: 60px;
+            width: ${SYMBOL_CONFIG.size}px;
+            height: ${SYMBOL_CONFIG.size}px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -421,14 +446,14 @@ function addStyles() {
         .chain-symbol::before {
             content: attr(data-order);
             position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 24px;
-            height: 24px;
+            top: -6px;
+            right: -6px;
+            width: ${SYMBOL_CONFIG.orderBadgeSize}px;
+            height: ${SYMBOL_CONFIG.orderBadgeSize}px;
             background: var(--color-text);
             color: white;
             border-radius: var(--radius-full);
-            font-size: var(--font-size-xs);
+            font-size: ${SYMBOL_CONFIG.orderBadgeSize * 0.5}px;
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -436,7 +461,7 @@ function addStyles() {
         }
         
         .chain-symbol i {
-            font-size: 1.8rem;
+            font-size: ${SYMBOL_CONFIG.iconSize}rem;
             color: white;
         }
         
@@ -605,11 +630,25 @@ function addStyles() {
  * Setzt Event-Listener
  */
 function setupEventListeners() {
-    // Schwierigkeit wählen
-    document.querySelectorAll('#chain-menu .difficulty-btn').forEach(btn => {
+    // Level-Buttons
+    document.querySelectorAll('.chain-level-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            startGame(btn.dataset.difficulty);
+            document.querySelectorAll('.chain-level-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.difficulty = parseInt(btn.dataset.level);
         });
+    });
+    
+    // Standard: Level 1 ausgewählt
+    const firstLevelBtn = document.querySelector('.chain-level-btn[data-level="1"]');
+    if (firstLevelBtn) {
+        firstLevelBtn.classList.add('selected');
+        state.difficulty = 1;
+    }
+    
+    // Start-Button
+    document.getElementById('btn-chain-start').addEventListener('click', () => {
+        startGame(state.difficulty);
     });
     
     // Arena Klicks
@@ -636,6 +675,7 @@ function showMenu() {
 
 /**
  * Startet ein neues Spiel
+ * @param {number} difficulty - Level 1-10
  */
 function startGame(difficulty) {
     state = {
@@ -665,8 +705,8 @@ function startGame(difficulty) {
     
     document.getElementById('arena-hint').classList.remove('hidden');
     
-    // Spawn starten
-    const config = DIFFICULTY[difficulty];
+    // Spawn starten mit Werten aus LEVEL_SETTINGS
+    const config = LEVEL_SETTINGS[difficulty];
     state.spawnTimer = setInterval(() => spawnSymbol(), config.spawnInterval);
     
     // Erstes Symbol sofort
@@ -699,7 +739,7 @@ function stopGame() {
 function spawnSymbol() {
     if (!state.isPlaying) return;
     
-    const config = DIFFICULTY[state.difficulty];
+    const config = LEVEL_SETTINGS[state.difficulty];
     
     // Max Symbole erreicht?
     if (state.activeSymbols.length >= config.maxSymbols) return;
@@ -712,9 +752,9 @@ function spawnSymbol() {
     
     // Zufällige Position (mit Abstand zum Rand)
     const arena = document.getElementById('chain-arena');
-    const padding = 40;
-    const maxX = arena.offsetWidth - 60 - padding;
-    const maxY = arena.offsetHeight - 60 - padding;
+    const padding = 30;
+    const maxX = arena.offsetWidth - SYMBOL_CONFIG.size - padding;
+    const maxY = arena.offsetHeight - SYMBOL_CONFIG.size - padding;
     
     let x, y, attempts = 0;
     
@@ -772,12 +812,10 @@ function spawnSymbol() {
  * Prüft ob Position mit anderen Symbolen überlappt
  */
 function isOverlapping(x, y) {
-    const minDistance = 70;
-    
     return state.activeSymbols.some(sym => {
         const dx = sym.x - x;
         const dy = sym.y - y;
-        return Math.sqrt(dx * dx + dy * dy) < minDistance;
+        return Math.sqrt(dx * dx + dy * dy) < SYMBOL_CONFIG.minDistance;
     });
 }
 
@@ -823,11 +861,10 @@ function handleCorrectTap(element, order) {
         state.maxCombo = state.combo;
     }
     
-    // Punkte berechnen
-    const basePoints = 10;
-    const comboBonus = Math.floor(state.combo / 3) * 5;
-    const difficultyMultiplier = state.difficulty === 'hard' ? 2 : state.difficulty === 'medium' ? 1.5 : 1;
-    const points = Math.floor((basePoints + comboBonus) * difficultyMultiplier);
+    // Punkte berechnen mit SCORE_CONFIG
+    const comboBonus = Math.floor(state.combo / 3) * SCORE_CONFIG.comboBonus;
+    const levelMultiplier = 1 + (state.difficulty - 1) * SCORE_CONFIG.levelMultiplierStep;
+    const points = Math.floor((SCORE_CONFIG.basePoints + comboBonus) * levelMultiplier);
     
     state.score += points;
     state.nextOrder++;
@@ -899,7 +936,7 @@ function handleSymbolExpire(symbol) {
  */
 function loseLife() {
     state.lives--;
-    state.combo = 0; // Combo zurücksetzen
+    state.combo = 0;
     
     updateUI();
     
@@ -956,6 +993,7 @@ function saveResult() {
  */
 function updateUI() {
     document.getElementById('chain-score').textContent = state.score;
+    document.getElementById('chain-level').textContent = state.difficulty;
     document.getElementById('chain-combo').textContent = `${state.combo}x`;
     document.getElementById('chain-next-order').textContent = state.nextOrder;
     

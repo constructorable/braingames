@@ -16,6 +16,8 @@ import * as MathGame from './mathSequence.js';
 import * as Sudoku from './sudoku.js';
 import * as ChainReaction from './chainReaction.js';
 import * as MindMaze from './mindMaze.js';
+import * as towerdefense from './towerdefense.js';
+import * as Theme from './theme.js';
 
 // Spiele-Registry
 const GAMES = {
@@ -37,10 +39,11 @@ const appState = {
  * App initialisieren
  */
 function init() {
+    Theme.init();  // NEU: Theme als erstes initialisieren
     UI.init();
     setupEventListeners();
     checkFirstVisit();
-
+    
     console.log('BrainFit App initialisiert');
 }
 
@@ -63,6 +66,9 @@ function setupEventListeners() {
             } else if (gameId === 'mindmaze') {
                 MindMaze.init();
                 MindMaze.show();
+            } else if (gameId === 'towerdefense') {
+                towerdefense.init();
+                towerdefense.show();
             } else {
                 selectGame(gameId);
             }
@@ -226,6 +232,7 @@ function returnToMenu() {
     Sudoku.hide();
     ChainReaction.hide();
     MindMaze.hide();
+    towerdefense.hide();
 
     UI.resetHistory();
     UI.showScreen('main-menu', { addToHistory: false });

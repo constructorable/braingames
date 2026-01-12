@@ -1,59 +1,45 @@
 /* =========================================
    Mind Maze – Das Gedächtnis-Labyrinth
    Ein Multi-Layer Gehirntraining-Erlebnis
-   
-   Konzept: Der Spieler muss sich einen Pfad durch
-   ein Labyrinth merken, während gleichzeitig
-   Symbole auf dem Weg erscheinen, die später
-   abgefragt werden.
-   
-   Trainiert: Räumliches Denken, Kurzzeitgedächtnis,
-   Mustererkennung, geteilte Aufmerksamkeit
    ========================================= */
 
-// Schwierigkeitsstufen
-const DIFFICULTY = {
-    easy: {
-        name: 'Anfänger',
-        gridSize: 4,
-        pathLength: 5,
-        symbolCount: 2,
-        showTime: 3000,
-        pathShowTime: 600,
-        lives: 3,
-        symbolQuestions: 1
-    },
-    medium: {
-        name: 'Fortgeschritten',
-        gridSize: 5,
-        pathLength: 7,
-        symbolCount: 3,
-        showTime: 2500,
-        pathShowTime: 500,
-        lives: 3,
-        symbolQuestions: 2
-    },
-    hard: {
-        name: 'Meister',
-        gridSize: 6,
-        pathLength: 10,
-        symbolCount: 4,
-        showTime: 2000,
-        pathShowTime: 400,
-        lives: 2,
-        symbolQuestions: 3
-    },
-    insane: {
-        name: 'Legende',
-        gridSize: 7,
-        pathLength: 14,
-        symbolCount: 5,
-        showTime: 1500,
-        pathShowTime: 300,
-        lives: 1,
-        symbolQuestions: 4
-    }
+/* -----------------------------------------
+   KONFIGURATION - Hier Werte anpassen!
+   ----------------------------------------- */
+
+// ÄNDERUNG: 10 Schwierigkeitsstufen statt 4
+const LEVEL_SETTINGS = {
+    // gridSize: Größe des Gitters (z.B. 4 = 4x4)
+    // pathLength: Länge des zu merkenden Pfades
+    // symbolCount: Anzahl Symbole auf dem Pfad
+    // showTime: Zeit in ms wie lange Pfad komplett sichtbar bleibt
+    // pathShowTime: Zeit in ms pro Pfadschritt-Animation
+    // lives: Anzahl Leben
+    // symbolQuestions: Anzahl Symbol-Fragen nach Pfad
+
+    1:  { gridSize: 3, pathLength: 4,  symbolCount: 1, showTime: 4000, pathShowTime: 800, lives: 3, symbolQuestions: 1 },
+    2:  { gridSize: 3, pathLength: 5,  symbolCount: 1, showTime: 3500, pathShowTime: 700, lives: 3, symbolQuestions: 1 },
+    3:  { gridSize: 4, pathLength: 5,  symbolCount: 2, showTime: 3500, pathShowTime: 650, lives: 3, symbolQuestions: 1 },
+    4:  { gridSize: 4, pathLength: 6,  symbolCount: 2, showTime: 3000, pathShowTime: 600, lives: 3, symbolQuestions: 2 },
+    5:  { gridSize: 4, pathLength: 7,  symbolCount: 3, showTime: 3000, pathShowTime: 550, lives: 3, symbolQuestions: 2 },
+    6:  { gridSize: 5, pathLength: 8,  symbolCount: 3, showTime: 2500, pathShowTime: 500, lives: 3, symbolQuestions: 2 },
+    7:  { gridSize: 5, pathLength: 9,  symbolCount: 4, showTime: 2500, pathShowTime: 450, lives: 2, symbolQuestions: 3 },
+    8:  { gridSize: 5, pathLength: 10, symbolCount: 4, showTime: 2000, pathShowTime: 400, lives: 2, symbolQuestions: 3 },
+    9:  { gridSize: 6, pathLength: 12, symbolCount: 5, showTime: 2000, pathShowTime: 350, lives: 2, symbolQuestions: 4 },
+    10: { gridSize: 6, pathLength: 14, symbolCount: 5, showTime: 1500, pathShowTime: 300, lives: 1, symbolQuestions: 4 }
 };
+
+// Punkteberechnung
+const SCORE_CONFIG = {
+    pointsPerPathStep: 10,
+    comboMultiplier: 5,
+    symbolBonus: 20,
+    roundBonus: 10
+};
+
+/* -----------------------------------------
+   ENDE KONFIGURATION
+   ----------------------------------------- */
 
 // Symbole für das Spiel
 const MAZE_SYMBOLS = [
@@ -71,13 +57,13 @@ const MAZE_SYMBOLS = [
 
 // Spielzustand
 let state = {
-    difficulty: 'easy',
-    gridSize: 4,
-    path: [],               // Der korrekte Pfad [{row, col, symbol?}]
-    pathSymbols: [],        // Symbole auf dem Pfad
-    userPath: [],           // Vom Spieler eingegebener Pfad
+    difficulty: 1,
+    gridSize: 3,
+    path: [],
+    pathSymbols: [],
+    userPath: [],
     currentStep: 0,
-    phase: 'menu',          // menu, showPath, inputPath, symbolQuestion, result
+    phase: 'menu',
     score: 0,
     round: 1,
     lives: 3,
@@ -111,6 +97,7 @@ function renderScreen() {
     screen.id = 'mindmaze-screen';
     screen.className = 'screen';
     
+    // ÄNDERUNG: Neues Layout mit Level-Grid
     screen.innerHTML = `
         <div class="maze-container">
             <!-- Menü -->
@@ -118,7 +105,6 @@ function renderScreen() {
                 <div class="maze-header">
                     <div class="maze-logo">
                         <i class="fas fa-brain"></i>
-                        <div class="maze-logo-pulse"></div>
                     </div>
                     <h2>Mind Maze</h2>
                     <p class="maze-tagline">Das Gedächtnis-Labyrinth</p>
@@ -137,42 +123,21 @@ function renderScreen() {
                         <i class="fas fa-question-circle"></i>
                         <span>Beantworte Fragen zu den Symbolen</span>
                     </div>
-                    <div class="desc-item">
-                        <i class="fas fa-trophy"></i>
-                        <span>Meistere immer längere Pfade</span>
+                </div>
+                
+                <div class="maze-level-section">
+                    <h3>Schwierigkeitsstufe wählen</h3>
+                    <div class="maze-level-grid">
+                        ${Array.from({length: 10}, (_, i) => `
+                            <button class="maze-level-btn" data-level="${i + 1}">${i + 1}</button>
+                        `).join('')}
                     </div>
                 </div>
                 
-                <div class="maze-difficulty-select">
-                    <button class="maze-diff-btn" data-difficulty="easy">
-                        <div class="diff-icon"><i class="fas fa-seedling"></i></div>
-                        <div class="diff-info">
-                            <span class="diff-name">Anfänger</span>
-                            <span class="diff-desc">4×4 Gitter • Kurze Pfade</span>
-                        </div>
-                    </button>
-                    <button class="maze-diff-btn" data-difficulty="medium">
-                        <div class="diff-icon"><i class="fas fa-fire"></i></div>
-                        <div class="diff-info">
-                            <span class="diff-name">Fortgeschritten</span>
-                            <span class="diff-desc">5×5 Gitter • Mehr Symbole</span>
-                        </div>
-                    </button>
-                    <button class="maze-diff-btn" data-difficulty="hard">
-                        <div class="diff-icon"><i class="fas fa-dragon"></i></div>
-                        <div class="diff-info">
-                            <span class="diff-name">Meister</span>
-                            <span class="diff-desc">6×6 Gitter • Schnell & Komplex</span>
-                        </div>
-                    </button>
-                    <button class="maze-diff-btn" data-difficulty="insane">
-                        <div class="diff-icon"><i class="fas fa-skull-crossbones"></i></div>
-                        <div class="diff-info">
-                            <span class="diff-name">Legende</span>
-                            <span class="diff-desc">7×7 Gitter • Nur für Genies</span>
-                        </div>
-                    </button>
-                </div>
+                <button id="btn-maze-start" class="btn-primary btn-large">
+                    <i class="fas fa-play"></i>
+                    Spiel starten
+                </button>
             </div>
             
             <!-- Spielbereich -->
@@ -187,7 +152,6 @@ function renderScreen() {
                         <span>Runde <span id="maze-round">1</span></span>
                     </div>
                     <div class="maze-stat lives" id="maze-lives-container">
-                        <!-- Herzen werden dynamisch generiert -->
                     </div>
                 </div>
                 
@@ -198,7 +162,6 @@ function renderScreen() {
                 
                 <div class="maze-grid-container">
                     <div id="maze-grid" class="maze-grid">
-                        <!-- Grid wird dynamisch generiert -->
                     </div>
                 </div>
                 
@@ -216,7 +179,6 @@ function renderScreen() {
                     </div>
                     <p id="question-text" class="question-text"></p>
                     <div id="question-options" class="question-options">
-                        <!-- Optionen werden dynamisch generiert -->
                     </div>
                 </div>
             </div>
@@ -286,7 +248,7 @@ function renderScreen() {
 }
 
 /**
- * Fügt die CSS-Styles hinzu
+ * Fügt die CSS-Styles hinzu - ÄNDERUNG: Kontrastreiche Farben und maximale Spielfläche
  */
 function addStyles() {
     if (document.getElementById('mindmaze-styles')) return;
@@ -294,7 +256,7 @@ function addStyles() {
     const style = document.createElement('style');
     style.id = 'mindmaze-styles';
     style.textContent = `
-        /* ===== Mind Maze Styles ===== */
+        /* ===== Mind Maze Styles - Kontrastreich ===== */
         
         .maze-container {
             display: flex;
@@ -318,60 +280,36 @@ function addStyles() {
         
         .maze-header {
             text-align: center;
-            position: relative;
         }
         
         .maze-logo {
-            width: 90px;
-            height: 90px;
+            width: 80px;
+            height: 80px;
             margin: 0 auto var(--spacing-md);
-            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
-            border-radius: 24px;
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
-            animation: logoFloat 3s ease-in-out infinite;
-        }
-        
-        @keyframes logoFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.5);
         }
         
         .maze-logo i {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             color: white;
-            z-index: 1;
-        }
-        
-        .maze-logo-pulse {
-            position: absolute;
-            inset: -4px;
-            border-radius: 28px;
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            opacity: 0.4;
-            animation: logoPulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes logoPulse {
-            0%, 100% { transform: scale(1); opacity: 0.4; }
-            50% { transform: scale(1.1); opacity: 0.2; }
         }
         
         .maze-header h2 {
             font-size: var(--font-size-2xl);
             font-weight: 800;
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--color-text);
+            margin-bottom: var(--spacing-xs);
         }
         
         .maze-tagline {
             color: var(--color-text-light);
             font-size: var(--font-size-sm);
+            font-weight: 500;
         }
         
         .maze-description {
@@ -391,91 +329,79 @@ function addStyles() {
             align-items: center;
             gap: var(--spacing-sm);
             font-size: var(--font-size-sm);
-            color: var(--color-text-light);
+            color: var(--color-text);
+            font-weight: 500;
         }
         
         .desc-item i {
             width: 24px;
             text-align: center;
-            color: #8b5cf6;
+            color: #7c3aed;
+            font-size: var(--font-size-base);
         }
         
-        .maze-difficulty-select {
-            display: flex;
-            flex-direction: column;
+        /* ÄNDERUNG: Level-Auswahl Grid */
+        .maze-level-section {
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
+        }
+        
+        .maze-level-section h3 {
+            font-size: var(--font-size-base);
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+            color: var(--color-text);
+        }
+        
+        .maze-level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
             gap: var(--spacing-sm);
+        }
+        
+        .maze-level-btn {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            background: var(--color-bg-card);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+            transition: all 0.2s ease;
+        }
+        
+        .maze-level-btn:hover {
+            border-color: #7c3aed;
+        }
+        
+        .maze-level-btn.selected {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .maze-level-btn:active {
+            transform: scale(0.95);
+        }
+        
+        #btn-maze-start {
             width: 100%;
             max-width: 340px;
         }
         
-        .maze-diff-btn {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-md);
-            padding: var(--spacing-md) var(--spacing-lg);
-            background: var(--color-bg-card);
-            border: 2px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            text-align: left;
-            transition: all 0.2s ease;
-        }
-        
-        .maze-diff-btn:active {
-            transform: scale(0.98);
-            border-color: #8b5cf6;
-            background: rgba(139, 92, 246, 0.1);
-        }
-        
-        .diff-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: var(--font-size-xl);
-        }
-        
-        .maze-diff-btn[data-difficulty="easy"] .diff-icon {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            color: white;
-        }
-        .maze-diff-btn[data-difficulty="medium"] .diff-icon {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: white;
-        }
-        .maze-diff-btn[data-difficulty="hard"] .diff-icon {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
-        }
-        .maze-diff-btn[data-difficulty="insane"] .diff-icon {
-            background: linear-gradient(135deg, #7c3aed, #5b21b6);
-            color: white;
-        }
-        
-        .diff-info {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .diff-name {
-            font-size: var(--font-size-base);
-            font-weight: 700;
-        }
-        
-        .diff-desc {
-            font-size: var(--font-size-xs);
-            color: var(--color-text-muted);
-        }
-        
-        /* === Spielbereich === */
+        /* === Spielbereich - ÄNDERUNG: Maximale Größe === */
         .maze-game {
             display: flex;
             flex-direction: column;
-            align-items: center;
             height: 100%;
-            padding: var(--spacing-sm);
-            gap: var(--spacing-sm);
+            padding: var(--spacing-xs);
+            gap: var(--spacing-xs);
         }
         
         .maze-game.hidden { display: none; }
@@ -484,125 +410,151 @@ function addStyles() {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            width: 100%;
             padding: var(--spacing-sm) var(--spacing-md);
             background: var(--color-bg-card);
             border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+            flex-shrink: 0;
         }
         
+        /* ÄNDERUNG: Kontrastreiche Stats */
         .maze-stat {
             display: flex;
             align-items: center;
             gap: var(--spacing-xs);
-            font-weight: 600;
+            font-weight: 700;
             font-size: var(--font-size-sm);
+            color: var(--color-text);
         }
         
-        .maze-stat i { color: #8b5cf6; }
-        .maze-stat.lives i { color: #ef4444; }
-        .maze-stat.lives .lost { opacity: 0.2; }
+        .maze-stat i { 
+            color: #7c3aed;
+            font-size: var(--font-size-base);
+        }
         
+        .maze-stat.lives i { 
+            color: #dc2626;
+        }
+        
+        .maze-stat.lives .lost { 
+            opacity: 0.25;
+        }
+        
+        /* ÄNDERUNG: Auffälligerer Phase-Indicator */
         .maze-phase-indicator {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: var(--spacing-sm);
             padding: var(--spacing-sm) var(--spacing-lg);
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
             color: white;
             border-radius: var(--radius-full);
-            font-weight: 600;
+            font-weight: 700;
             font-size: var(--font-size-sm);
-            animation: phaseGlow 2s ease-in-out infinite;
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+            flex-shrink: 0;
+            align-self: center;
         }
         
-        @keyframes phaseGlow {
-            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6); }
-        }
-        
+        /* ÄNDERUNG: Grid-Container maximiert */
         .maze-grid-container {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
             width: 100%;
-            padding: var(--spacing-sm);
+            min-height: 0;
+            padding: var(--spacing-xs);
         }
         
+        /* ÄNDERUNG: Kontrastreiches Grid */
         .maze-grid {
             display: grid;
-            gap: 4px;
-            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
-            padding: 8px;
+            gap: 6px;
+            background: #1e1b4b;
+            padding: 10px;
             border-radius: var(--radius-lg);
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: inset 0 4px 15px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: min(95vw, 400px);
+            aspect-ratio: 1;
         }
         
+        /* ÄNDERUNG: Kontrastreiche Zellen */
         .maze-cell {
-            width: 100%;
-            aspect-ratio: 1;
-            background: var(--color-bg-card);
+            background: #e2e8f0;
             border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             position: relative;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border: 2px solid transparent;
         }
         
         .maze-cell:active {
-            transform: scale(0.95);
+            transform: scale(0.92);
         }
         
+        /* ÄNDERUNG: Sehr auffälliger Pfad */
         .maze-cell.path-show {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
-            animation: cellPulse 0.5s ease;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.8), inset 0 2px 10px rgba(255,255,255,0.3);
+            border-color: #fef3c7;
+            animation: cellPulse 0.4s ease;
         }
         
+        /* ÄNDERUNG: Korrekt = Grün sehr sichtbar */
         .maze-cell.path-correct {
             background: linear-gradient(135deg, #22c55e, #16a34a);
-            box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.7);
+            border-color: #bbf7d0;
         }
         
+        /* ÄNDERUNG: Falsch = Rot sehr sichtbar */
         .maze-cell.path-wrong {
             background: linear-gradient(135deg, #ef4444, #dc2626);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.7);
+            border-color: #fecaca;
             animation: cellShake 0.4s ease;
         }
         
+        /* ÄNDERUNG: Start-Zelle deutlich markiert */
         .maze-cell.start-cell {
             border: 3px solid #22c55e;
+            background: #dcfce7;
         }
         
         .maze-cell.start-cell::after {
             content: 'START';
             position: absolute;
             font-size: 0.5rem;
-            font-weight: 700;
-            color: #22c55e;
+            font-weight: 800;
+            color: #16a34a;
             bottom: 2px;
+            letter-spacing: 0.5px;
         }
         
         .maze-cell .cell-symbol {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             color: white;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
             animation: symbolAppear 0.3s ease;
         }
         
         @keyframes cellPulse {
-            0% { transform: scale(0.8); }
-            50% { transform: scale(1.1); }
+            0% { transform: scale(0.85); }
+            50% { transform: scale(1.08); }
             100% { transform: scale(1); }
         }
         
         @keyframes cellShake {
             0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-4px); }
-            40%, 80% { transform: translateX(4px); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
         }
         
         @keyframes symbolAppear {
@@ -610,13 +562,17 @@ function addStyles() {
             100% { transform: scale(1) rotate(0); opacity: 1; }
         }
         
+        /* ÄNDERUNG: Auffälligeres Combo-Display */
         .maze-combo {
             font-size: var(--font-size-lg);
-            font-weight: 700;
+            font-weight: 800;
             color: #f59e0b;
+            text-align: center;
             opacity: 0;
             transform: scale(0.8);
             transition: all 0.3s ease;
+            flex-shrink: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
         .maze-combo.visible {
@@ -624,16 +580,17 @@ function addStyles() {
             transform: scale(1);
         }
         
-        /* === Symbol-Frage === */
+        /* === Symbol-Frage - ÄNDERUNG: Kontrastreich === */
         .maze-question {
             position: absolute;
             inset: 0;
-            background: rgba(255, 255, 255, 0.98);
+            background: var(--color-bg);
             display: flex;
             align-items: center;
             justify-content: center;
             padding: var(--spacing-lg);
             animation: fadeIn 0.3s ease;
+            z-index: 10;
         }
         
         .maze-question.hidden { display: none; }
@@ -641,6 +598,7 @@ function addStyles() {
         .question-content {
             text-align: center;
             max-width: 350px;
+            width: 100%;
         }
         
         .question-header {
@@ -652,13 +610,14 @@ function addStyles() {
         }
         
         .question-header i {
-            font-size: 2.5rem;
-            color: #8b5cf6;
+            font-size: 3rem;
+            color: #7c3aed;
         }
         
         .question-header h3 {
             font-size: var(--font-size-xl);
-            font-weight: 700;
+            font-weight: 800;
+            color: var(--color-text);
         }
         
         .question-text {
@@ -666,6 +625,7 @@ function addStyles() {
             color: var(--color-text);
             margin-bottom: var(--spacing-xl);
             line-height: 1.5;
+            font-weight: 600;
         }
         
         .question-options {
@@ -674,6 +634,7 @@ function addStyles() {
             gap: var(--spacing-md);
         }
         
+        /* ÄNDERUNG: Kontrastreiche Options-Buttons */
         .question-option {
             display: flex;
             flex-direction: column;
@@ -681,7 +642,7 @@ function addStyles() {
             gap: var(--spacing-sm);
             padding: var(--spacing-lg);
             background: var(--color-bg-card);
-            border: 2px solid var(--color-border);
+            border: 3px solid var(--color-border);
             border-radius: var(--radius-lg);
             cursor: pointer;
             transition: all 0.2s ease;
@@ -692,33 +653,35 @@ function addStyles() {
         }
         
         .question-option i {
-            font-size: 2rem;
+            font-size: 2.5rem;
         }
         
         .question-option span {
-            font-size: var(--font-size-sm);
-            font-weight: 600;
+            font-size: var(--font-size-base);
+            font-weight: 700;
+            color: var(--color-text);
         }
         
         .question-option.correct {
             border-color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
+            background: #dcfce7;
         }
         
         .question-option.wrong {
             border-color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
+            background: #fee2e2;
         }
         
         /* === Runden-Ergebnis === */
         .maze-round-result {
             position: absolute;
             inset: 0;
-            background: rgba(255, 255, 255, 0.98);
+            background: var(--color-bg);
             display: flex;
             align-items: center;
             justify-content: center;
             animation: fadeIn 0.3s ease;
+            z-index: 10;
         }
         
         .maze-round-result.hidden { display: none; }
@@ -728,8 +691,8 @@ function addStyles() {
         }
         
         .round-result-content .result-icon {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             margin: 0 auto var(--spacing-md);
             border-radius: var(--radius-full);
             display: flex;
@@ -741,26 +704,31 @@ function addStyles() {
         .result-icon.success {
             background: linear-gradient(135deg, #22c55e, #16a34a);
             color: white;
+            box-shadow: 0 8px 30px rgba(34, 197, 94, 0.4);
         }
         
         .result-icon.fail {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
+            box-shadow: 0 8px 30px rgba(239, 68, 68, 0.4);
         }
         
         .round-result-content h3 {
             font-size: var(--font-size-xl);
+            font-weight: 800;
+            color: var(--color-text);
             margin-bottom: var(--spacing-xs);
         }
         
         .round-result-content p {
             color: var(--color-text-light);
+            font-weight: 500;
             margin-bottom: var(--spacing-md);
         }
         
         .round-points {
             font-size: var(--font-size-2xl);
-            font-weight: 700;
+            font-weight: 800;
             color: #22c55e;
             animation: pointsBounce 0.5s ease;
         }
@@ -792,12 +760,12 @@ function addStyles() {
         .maze-gameover .gameover-icon {
             width: 100px;
             height: 100px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
             border-radius: var(--radius-full);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 40px rgba(124, 58, 237, 0.4);
         }
         
         .maze-gameover .gameover-icon i {
@@ -805,12 +773,18 @@ function addStyles() {
             color: white;
         }
         
+        .maze-gameover h2 {
+            font-size: var(--font-size-2xl);
+            font-weight: 800;
+            color: var(--color-text);
+        }
+        
         .gameover-stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: var(--spacing-md);
             width: 100%;
-            max-width: 280px;
+            max-width: 300px;
         }
         
         .go-stat {
@@ -821,23 +795,25 @@ function addStyles() {
             padding: var(--spacing-md);
             background: var(--color-bg-card);
             border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
         }
         
         .go-stat i {
             font-size: var(--font-size-lg);
-            color: #8b5cf6;
+            color: #7c3aed;
         }
         
         .go-stat-value {
             font-size: var(--font-size-xl);
-            font-weight: 700;
+            font-weight: 800;
             color: var(--color-text);
         }
         
         .go-stat-label {
             font-size: var(--font-size-xs);
-            color: var(--color-text-muted);
+            color: var(--color-text-light);
             text-transform: uppercase;
+            font-weight: 600;
         }
         
         .maze-gameover .gameover-actions {
@@ -845,7 +821,7 @@ function addStyles() {
             flex-direction: column;
             gap: var(--spacing-sm);
             width: 100%;
-            max-width: 250px;
+            max-width: 280px;
         }
         
         .maze-gameover .gameover-actions button {
@@ -857,6 +833,35 @@ function addStyles() {
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        
+        /* === Dark Mode Anpassungen === */
+        [data-theme="dark"] .maze-grid {
+            background: #0f0a1e;
+            box-shadow: inset 0 4px 15px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        [data-theme="dark"] .maze-cell {
+            background: #374151;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        [data-theme="dark"] .maze-cell.start-cell {
+            background: #064e3b;
+        }
+        
+        [data-theme="dark"] .question-option {
+            background: var(--color-bg-card);
+        }
+        
+        [data-theme="dark"] .question-option.correct {
+            background: #064e3b;
+            border-color: #22c55e;
+        }
+        
+        [data-theme="dark"] .question-option.wrong {
+            background: #7f1d1d;
+            border-color: #ef4444;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -865,9 +870,25 @@ function addStyles() {
  * Event Listener Setup
  */
 function setupEventListeners() {
-    // Schwierigkeitsauswahl
-    document.querySelectorAll('.maze-diff-btn').forEach(btn => {
-        btn.addEventListener('click', () => startGame(btn.dataset.difficulty));
+    // ÄNDERUNG: Level-Buttons statt Difficulty-Buttons
+    document.querySelectorAll('.maze-level-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.maze-level-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.difficulty = parseInt(btn.dataset.level);
+        });
+    });
+    
+    // Standard: Level 1 ausgewählt
+    const firstLevelBtn = document.querySelector('.maze-level-btn[data-level="1"]');
+    if (firstLevelBtn) {
+        firstLevelBtn.classList.add('selected');
+        state.difficulty = 1;
+    }
+    
+    // NEU: Start-Button
+    document.getElementById('btn-maze-start').addEventListener('click', () => {
+        startGame(state.difficulty);
     });
     
     // Grid Klicks
@@ -896,9 +917,10 @@ function showMenu() {
 
 /**
  * Startet ein neues Spiel
+ * @param {number} difficulty - Level 1-10
  */
 function startGame(difficulty) {
-    const config = DIFFICULTY[difficulty];
+    const config = LEVEL_SETTINGS[difficulty];
     
     state = {
         difficulty,
@@ -934,13 +956,21 @@ function startGame(difficulty) {
 }
 
 /**
- * Rendert das Grid
+ * Rendert das Grid - ÄNDERUNG: Maximale Größe
  */
 function renderGrid() {
     const grid = document.getElementById('maze-grid');
-    const cellSize = Math.min(50, (window.innerWidth - 60) / state.gridSize);
+    const container = document.querySelector('.maze-grid-container');
+    
+    // Berechne maximale Zellgröße basierend auf verfügbarem Platz
+    const containerWidth = container.offsetWidth - 20;
+    const containerHeight = container.offsetHeight - 20;
+    const maxGridSize = Math.min(containerWidth, containerHeight, 400);
+    const cellSize = Math.floor((maxGridSize - 20 - (state.gridSize - 1) * 6) / state.gridSize);
     
     grid.style.gridTemplateColumns = `repeat(${state.gridSize}, ${cellSize}px)`;
+    grid.style.width = 'auto';
+    grid.style.maxWidth = `${maxGridSize}px`;
     grid.innerHTML = '';
     
     for (let row = 0; row < state.gridSize; row++) {
@@ -950,6 +980,7 @@ function renderGrid() {
             cell.dataset.row = row;
             cell.dataset.col = col;
             cell.style.width = `${cellSize}px`;
+            cell.style.height = `${cellSize}px`;
             grid.appendChild(cell);
         }
     }
@@ -959,7 +990,7 @@ function renderGrid() {
  * Startet eine neue Runde
  */
 function startRound() {
-    const config = DIFFICULTY[state.difficulty];
+    const config = LEVEL_SETTINGS[state.difficulty];
     
     // Pfadlänge steigt mit den Runden
     const pathLength = config.pathLength + Math.floor((state.round - 1) / 2);
@@ -1019,10 +1050,10 @@ function generatePath(length) {
  */
 function getValidNeighbors(row, col) {
     const directions = [
-        { row: -1, col: 0 },  // oben
-        { row: 1, col: 0 },   // unten
-        { row: 0, col: -1 },  // links
-        { row: 0, col: 1 }    // rechts
+        { row: -1, col: 0 },
+        { row: 1, col: 0 },
+        { row: 0, col: -1 },
+        { row: 0, col: 1 }
     ];
     
     const neighbors = [];
@@ -1031,11 +1062,9 @@ function getValidNeighbors(row, col) {
         const newRow = row + dir.row;
         const newCol = col + dir.col;
         
-        // Im Grid?
         if (newRow < 0 || newRow >= state.gridSize) continue;
         if (newCol < 0 || newCol >= state.gridSize) continue;
         
-        // Schon im Pfad?
         const alreadyInPath = state.path.some(p => p.row === newRow && p.col === newCol);
         if (alreadyInPath) continue;
         
@@ -1049,19 +1078,17 @@ function getValidNeighbors(row, col) {
  * Platziert Symbole auf dem Pfad
  */
 function placeSymbols() {
-    const config = DIFFICULTY[state.difficulty];
+    const config = LEVEL_SETTINGS[state.difficulty];
     const symbolCount = config.symbolCount + Math.floor((state.round - 1) / 3);
     
-    // Zufällige Positionen auf dem Pfad (nicht Start/Ende)
     const availablePositions = state.path.slice(1, -1);
     const shuffled = [...availablePositions].sort(() => Math.random() - 0.5);
     const symbolPositions = shuffled.slice(0, Math.min(symbolCount, shuffled.length));
     
-    // Zufällige Symbole zuweisen
     state.pathSymbols = [];
     const usedSymbols = new Set();
     
-    symbolPositions.forEach((pos, index) => {
+    symbolPositions.forEach((pos) => {
         let symbolIndex;
         do {
             symbolIndex = Math.floor(Math.random() * MAZE_SYMBOLS.length);
@@ -1070,7 +1097,6 @@ function placeSymbols() {
         usedSymbols.add(symbolIndex);
         const symbol = MAZE_SYMBOLS[symbolIndex];
         
-        // Symbol im Pfad speichern
         const pathIndex = state.path.findIndex(p => p.row === pos.row && p.col === pos.col);
         if (pathIndex !== -1) {
             state.path[pathIndex].symbol = symbol;
@@ -1088,7 +1114,7 @@ function placeSymbols() {
  * Zeigt den Pfad animiert
  */
 async function showPath() {
-    const config = DIFFICULTY[state.difficulty];
+    const config = LEVEL_SETTINGS[state.difficulty];
     state.isAnimating = true;
     
     // Start markieren
@@ -1113,7 +1139,7 @@ async function showPath() {
     // Kurz warten, dann alles ausblenden
     await delay(config.showTime);
     
-    // Pfad ausblenden, Symbole merken
+    // Pfad ausblenden
     for (const step of state.path) {
         const cell = getCell(step.row, step.col);
         cell.classList.remove('path-show');
@@ -1140,13 +1166,11 @@ async function handleGridClick(e) {
     // Erste Eingabe muss der Start sein
     if (state.currentStep === 0) {
         if (row !== state.path[0].row || col !== state.path[0].col) {
-            // Falscher Start
             cell.classList.add('path-wrong');
             setTimeout(() => cell.classList.remove('path-wrong'), 400);
             return;
         }
     } else {
-        // Muss Nachbar des letzten Schritts sein
         const last = state.userPath[state.userPath.length - 1];
         const isNeighbor = (
             (Math.abs(row - last.row) === 1 && col === last.col) ||
@@ -1161,7 +1185,6 @@ async function handleGridClick(e) {
     const isCorrect = row === expected.row && col === expected.col;
     
     if (isCorrect) {
-        // Korrekt!
         cell.classList.add('path-correct');
         state.userPath.push({ row, col });
         state.currentStep++;
@@ -1178,7 +1201,6 @@ async function handleGridClick(e) {
             state.totalPathsCorrect++;
             await delay(300);
             
-            // Symbol-Fragen stellen
             if (state.pathSymbols.length > 0) {
                 askSymbolQuestion();
             } else {
@@ -1186,7 +1208,6 @@ async function handleGridClick(e) {
             }
         }
     } else {
-        // Falsch!
         cell.classList.add('path-wrong');
         state.combo = 0;
         updateComboDisplay();
@@ -1202,7 +1223,7 @@ async function handleGridClick(e) {
  * Stellt eine Symbol-Frage
  */
 function askSymbolQuestion() {
-    const config = DIFFICULTY[state.difficulty];
+    const config = LEVEL_SETTINGS[state.difficulty];
     
     if (state.questionsAsked >= config.symbolQuestions || state.questionsAsked >= state.pathSymbols.length) {
         roundComplete(true);
@@ -1211,10 +1232,8 @@ function askSymbolQuestion() {
     
     state.phase = 'symbolQuestion';
     
-    // Zufälliges Symbol auswählen
     const symbolData = state.pathSymbols[state.questionsAsked];
     
-    // Frage generieren
     const questionTypes = [
         {
             text: `Welches Symbol war auf Position ${symbolData.position + 1} des Pfades?`,
@@ -1230,7 +1249,6 @@ function askSymbolQuestion() {
     
     const question = questionTypes[Math.floor(Math.random() * questionTypes.length)];
     
-    // Optionen generieren
     let options;
     if (question.type === 'which') {
         options = generateSymbolOptions(symbolData.symbol);
@@ -1243,7 +1261,6 @@ function askSymbolQuestion() {
     
     state.currentQuestion = { ...question, options, correctSymbol: symbolData.symbol };
     
-    // UI aktualisieren
     document.getElementById('question-text').textContent = question.text;
     
     const optionsContainer = document.getElementById('question-options');
@@ -1264,7 +1281,6 @@ function askSymbolQuestion() {
 function generateSymbolOptions(correctSymbol) {
     const options = [{ ...correctSymbol, correct: true, text: correctSymbol.name }];
     
-    // 3 falsche Optionen
     const otherSymbols = MAZE_SYMBOLS.filter(s => s.icon !== correctSymbol.icon);
     const shuffled = otherSymbols.sort(() => Math.random() - 0.5);
     
@@ -1272,7 +1288,6 @@ function generateSymbolOptions(correctSymbol) {
         options.push({ ...shuffled[i], correct: false, text: shuffled[i].name });
     }
     
-    // Mischen
     return options.sort(() => Math.random() - 0.5);
 }
 
@@ -1289,10 +1304,8 @@ async function handleQuestionClick(e) {
     const selectedOption = state.currentQuestion.options[index];
     const isCorrect = selectedOption.correct;
     
-    // Visuelles Feedback
     option.classList.add(isCorrect ? 'correct' : 'wrong');
     
-    // Richtige Antwort markieren falls falsch
     if (!isCorrect) {
         const correctIndex = state.currentQuestion.options.findIndex(o => o.correct);
         document.querySelectorAll('.question-option')[correctIndex].classList.add('correct');
@@ -1307,8 +1320,7 @@ async function handleQuestionClick(e) {
     
     state.questionsAsked++;
     
-    // Mehr Fragen?
-    const config = DIFFICULTY[state.difficulty];
+    const config = LEVEL_SETTINGS[state.difficulty];
     if (state.questionsAsked < config.symbolQuestions && state.questionsAsked < state.pathSymbols.length && state.lives > 0) {
         document.getElementById('maze-question').classList.add('hidden');
         document.getElementById('maze-game').classList.remove('hidden');
@@ -1323,16 +1335,14 @@ async function handleQuestionClick(e) {
  * Runde abgeschlossen
  */
 async function roundComplete(success) {
-    // Punkte berechnen
-    const basePoints = state.path.length * 10;
-    const comboBonus = state.combo * 5;
-    const symbolBonus = state.totalSymbolsCorrect * 20;
-    const roundBonus = state.round * 10;
+    const basePoints = state.path.length * SCORE_CONFIG.pointsPerPathStep;
+    const comboBonus = state.combo * SCORE_CONFIG.comboMultiplier;
+    const symbolBonus = state.totalSymbolsCorrect * SCORE_CONFIG.symbolBonus;
+    const roundBonus = state.round * SCORE_CONFIG.roundBonus;
     const totalPoints = success ? basePoints + comboBonus + symbolBonus + roundBonus : 0;
     
     state.score += totalPoints;
     
-    // Ergebnis zeigen
     const resultIcon = document.getElementById('round-result-icon');
     resultIcon.className = `result-icon ${success ? 'success' : 'fail'}`;
     resultIcon.innerHTML = `<i class="fas ${success ? 'fa-check-circle' : 'fa-times-circle'}"></i>`;
@@ -1427,11 +1437,10 @@ function updateUI() {
     document.getElementById('maze-score').textContent = state.score;
     document.getElementById('maze-round').textContent = state.round;
     
-    // Leben
+    const config = LEVEL_SETTINGS[state.difficulty];
     const livesContainer = document.getElementById('maze-lives-container');
-    const maxLives = DIFFICULTY[state.difficulty].lives;
     livesContainer.innerHTML = '';
-    for (let i = 0; i < maxLives; i++) {
+    for (let i = 0; i < config.lives; i++) {
         const heart = document.createElement('i');
         heart.className = `fas fa-heart${i >= state.lives ? ' lost' : ''}`;
         livesContainer.appendChild(heart);

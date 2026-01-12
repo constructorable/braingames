@@ -1,29 +1,48 @@
 /* =========================================
    Sudoku Spiel
-   Klassisches 9x9 Sudoku mit 3 Schwierigkeitsstufen
+   Klassisches 9x9 Sudoku mit 10 Schwierigkeitsstufen
    ========================================= */
 
-// Schwierigkeitsstufen (Anzahl entfernter Zellen)
-const DIFFICULTY = {
-    easy: { name: 'Leicht', remove: 35, hints: 5 },
-    medium: { name: 'Mittel', remove: 45, hints: 3 },
-    hard: { name: 'Schwer', remove: 55, hints: 1 }
+/* -----------------------------------------
+   KONFIGURATION - Hier Werte anpassen!
+   ----------------------------------------- */
+
+// ÄNDERUNG: 10 Schwierigkeitsstufen
+const LEVEL_SETTINGS = {
+    // remove: Anzahl entfernter Zellen (mehr = schwieriger)
+    // hints: Anzahl verfügbarer Hinweise
+    
+    1:  { name: 'Level 1',  remove: 25, hints: 10 },
+    2:  { name: 'Level 2',  remove: 30, hints: 8 },
+    3:  { name: 'Level 3',  remove: 35, hints: 6 },
+    4:  { name: 'Level 4',  remove: 38, hints: 5 },
+    5:  { name: 'Level 5',  remove: 42, hints: 4 },
+    6:  { name: 'Level 6',  remove: 46, hints: 3 },
+    7:  { name: 'Level 7',  remove: 50, hints: 2 },
+    8:  { name: 'Level 8',  remove: 53, hints: 2 },
+    9:  { name: 'Level 9',  remove: 56, hints: 1 },
+    10: { name: 'Level 10', remove: 60, hints: 0 }
 };
+
+/* -----------------------------------------
+   ENDE KONFIGURATION
+   ----------------------------------------- */
 
 // Spielzustand
 let state = {
-    solution: [],       // Komplette Lösung
-    puzzle: [],         // Aktuelles Puzzle (mit Lücken)
-    userGrid: [],       // Nutzereingaben
-    initial: [],        // Ursprüngliche vorgegebene Zellen
-    selectedCell: null, // { row, col }
-    difficulty: 'easy',
-    hints: 5,
+    solution: [],
+    puzzle: [],
+    userGrid: [],
+    initial: [],
+    selectedCell: null,
+    difficulty: 1,
+    hints: 10,
     errors: 0,
     startTime: null,
     timer: null,
     elapsed: 0,
-    isComplete: false
+    isComplete: false,
+    showErrors: false  // NEU: Fehleranzeige an/aus
 };
 
 /**
@@ -40,13 +59,13 @@ export function init() {
 function renderSudokuScreen() {
     const app = document.getElementById('app');
     
-    // Prüfen ob Sudoku-Screen bereits existiert
     if (document.getElementById('sudoku-screen')) return;
     
     const sudokuScreen = document.createElement('section');
     sudokuScreen.id = 'sudoku-screen';
     sudokuScreen.className = 'screen';
     
+    // ÄNDERUNG: Neues Layout mit Level-Grid
     sudokuScreen.innerHTML = `
         <div class="sudoku-container">
             <!-- Schwierigkeitsauswahl -->
@@ -56,26 +75,26 @@ function renderSudokuScreen() {
                         <i class="fas fa-table-cells"></i>
                     </div>
                     <h2>Sudoku</h2>
-                    <p>Wähle deine Schwierigkeit</p>
+                    <p>Klassisches Zahlenrätsel</p>
                 </div>
                 
-                <div class="difficulty-buttons">
-                    <button class="difficulty-btn" data-difficulty="easy">
-                        <i class="fas fa-seedling"></i>
-                        <span>Leicht</span>
-                        <small>35 leere Felder • 5 Hinweise</small>
-                    </button>
-                    <button class="difficulty-btn" data-difficulty="medium">
-                        <i class="fas fa-fire"></i>
-                        <span>Mittel</span>
-                        <small>45 leere Felder • 3 Hinweise</small>
-                    </button>
-                    <button class="difficulty-btn" data-difficulty="hard">
-                        <i class="fas fa-skull"></i>
-                        <span>Schwer</span>
-                        <small>55 leere Felder • 1 Hinweis</small>
-                    </button>
+                <div class="sudoku-level-section">
+                    <h3>Schwierigkeitsstufe wählen</h3>
+                    <div class="sudoku-level-grid">
+                        ${Array.from({length: 10}, (_, i) => `
+                            <button class="sudoku-level-btn" data-level="${i + 1}">${i + 1}</button>
+                        `).join('')}
+                    </div>
+                    <div class="sudoku-level-info">
+                        <span id="sudoku-level-cells">25 leere Felder</span>
+                        <span id="sudoku-level-hints">10 Hinweise</span>
+                    </div>
                 </div>
+                
+                <button id="btn-sudoku-start" class="btn-primary btn-large">
+                    <i class="fas fa-play"></i>
+                    Spiel starten
+                </button>
             </div>
             
             <!-- Spielbereich -->
@@ -86,12 +105,12 @@ function renderSudokuScreen() {
                         <span id="sudoku-timer">00:00</span>
                     </div>
                     <div class="sudoku-stat">
-                        <i class="fas fa-lightbulb"></i>
-                        <span id="sudoku-hints">5</span>
+                        <i class="fas fa-layer-group"></i>
+                        <span>Level <span id="sudoku-level-display">1</span></span>
                     </div>
                     <div class="sudoku-stat">
-                        <i class="fas fa-times-circle"></i>
-                        <span id="sudoku-errors">0</span>
+                        <i class="fas fa-lightbulb"></i>
+                        <span id="sudoku-hints">10</span>
                     </div>
                 </div>
                 
@@ -120,6 +139,10 @@ function renderSudokuScreen() {
                         <i class="fas fa-eraser"></i>
                         Löschen
                     </button>
+                    <button id="btn-sudoku-check" class="sudoku-action-btn" title="Fehler anzeigen">
+                        <i class="fas fa-eye"></i>
+                        Prüfen
+                    </button>
                     <button id="btn-sudoku-new" class="sudoku-action-btn">
                         <i class="fas fa-redo"></i>
                         Neu
@@ -140,12 +163,12 @@ function renderSudokuScreen() {
                             <span class="stat-value" id="complete-time">00:00</span>
                         </div>
                         <div class="complete-stat">
-                            <span class="stat-label">Fehler</span>
-                            <span class="stat-value" id="complete-errors">0</span>
+                            <span class="stat-label">Level</span>
+                            <span class="stat-value" id="complete-level">1</span>
                         </div>
                         <div class="complete-stat">
-                            <span class="stat-label">Schwierigkeit</span>
-                            <span class="stat-value" id="complete-difficulty">Leicht</span>
+                            <span class="stat-label">Hinweise</span>
+                            <span class="stat-value" id="complete-hints-used">0</span>
                         </div>
                     </div>
                     <button id="btn-sudoku-menu" class="btn-primary btn-large">
@@ -157,11 +180,9 @@ function renderSudokuScreen() {
         </div>
     `;
     
-    // Vor dem Loading-Overlay einfügen
     const loadingOverlay = document.getElementById('loading-overlay');
     app.insertBefore(sudokuScreen, loadingOverlay);
     
-    // Sudoku-Styles hinzufügen
     addSudokuStyles();
 }
 
@@ -199,12 +220,12 @@ function addSudokuStyles() {
             width: 80px;
             height: 80px;
             margin: 0 auto var(--spacing-md);
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
             border-radius: var(--radius-xl);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
         }
         
         .sudoku-logo i {
@@ -216,57 +237,83 @@ function addSudokuStyles() {
             font-size: var(--font-size-2xl);
             font-weight: 700;
             margin-bottom: var(--spacing-xs);
+            color: var(--color-text);
         }
         
         .sudoku-header p {
             color: var(--color-text-light);
+            font-weight: 500;
         }
         
-        .difficulty-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-md);
+        /* ÄNDERUNG: Level-Auswahl */
+        .sudoku-level-section {
             width: 100%;
             max-width: 320px;
-        }
-        
-        .difficulty-btn {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-md);
-            padding: var(--spacing-lg);
-            background: var(--color-bg-card);
-            border: 2px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            text-align: left;
-            transition: all var(--transition-fast);
-        }
-        
-        .difficulty-btn:active {
-            transform: scale(0.98);
-            border-color: var(--color-primary);
-        }
-        
-        .difficulty-btn i {
-            font-size: var(--font-size-2xl);
-            width: 40px;
             text-align: center;
         }
         
-        .difficulty-btn[data-difficulty="easy"] i { color: #22c55e; }
-        .difficulty-btn[data-difficulty="medium"] i { color: #f59e0b; }
-        .difficulty-btn[data-difficulty="hard"] i { color: #ef4444; }
-        
-        .difficulty-btn span {
-            font-size: var(--font-size-lg);
+        .sudoku-level-section h3 {
+            font-size: var(--font-size-base);
             font-weight: 600;
-            display: block;
+            margin-bottom: var(--spacing-md);
+            color: var(--color-text);
         }
         
-        .difficulty-btn small {
+        .sudoku-level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .sudoku-level-btn {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            background: var(--color-bg-card);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+            transition: all 0.2s ease;
+        }
+        
+        .sudoku-level-btn:hover {
+            border-color: #6366f1;
+        }
+        
+        .sudoku-level-btn.selected {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .sudoku-level-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .sudoku-level-info {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-lg);
             font-size: var(--font-size-sm);
             color: var(--color-text-light);
-            font-weight: 400;
+            font-weight: 500;
+        }
+        
+        .sudoku-level-info span {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+        
+        #btn-sudoku-start {
+            width: 100%;
+            max-width: 320px;
         }
         
         /* Spielbereich */
@@ -274,8 +321,8 @@ function addSudokuStyles() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: var(--spacing-lg);
-            padding: var(--spacing-md);
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm);
         }
         
         .sudoku-game.hidden {
@@ -286,6 +333,7 @@ function addSudokuStyles() {
             display: flex;
             justify-content: center;
             gap: var(--spacing-xl);
+            width: 100%;
         }
         
         .sudoku-stat {
@@ -293,12 +341,12 @@ function addSudokuStyles() {
             align-items: center;
             gap: var(--spacing-sm);
             font-size: var(--font-size-base);
-            font-weight: 600;
-            color: var(--color-text-light);
+            font-weight: 700;
+            color: var(--color-text);
         }
         
         .sudoku-stat i {
-            color: var(--color-primary);
+            color: #6366f1;
         }
         
         /* Sudoku Board */
@@ -306,12 +354,13 @@ function addSudokuStyles() {
             display: grid;
             grid-template-columns: repeat(9, 1fr);
             gap: 1px;
-            background-color: var(--color-text);
-            border: 3px solid var(--color-text);
+            background-color: #1e1b4b;
+            border: 3px solid #1e1b4b;
             border-radius: var(--radius-md);
             width: 100%;
             max-width: 360px;
             aspect-ratio: 1;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
         
         .sudoku-cell {
@@ -320,11 +369,12 @@ function addSudokuStyles() {
             justify-content: center;
             background-color: var(--color-bg-card);
             font-size: var(--font-size-xl);
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: background-color var(--transition-fast);
+            transition: background-color 0.15s;
             user-select: none;
             -webkit-user-select: none;
+            color: var(--color-text);
         }
         
         .sudoku-cell:active {
@@ -339,36 +389,41 @@ function addSudokuStyles() {
             background-color: #e0e7ff;
         }
         
+        /* ÄNDERUNG: Initiale Zellen dunkler */
         .sudoku-cell.initial {
-            color: var(--color-text);
-            font-weight: 700;
+            color: #1e1b4b;
+            font-weight: 800;
+            background-color: #f1f5f9;
         }
         
+        /* ÄNDERUNG: User-Input ohne Farbmarkierung */
         .sudoku-cell.user-input {
-            color: var(--color-primary);
+            color: #4f46e5;
         }
         
-        .sudoku-cell.error {
-            color: var(--color-error);
-            background-color: #fecaca;
+        /* ÄNDERUNG: Fehler nur bei aktivierter Prüfung */
+        .sudoku-cell.error-visible {
+            color: #dc2626;
+            background-color: #fee2e2;
         }
         
+        /* Hinweis bleibt sichtbar */
         .sudoku-cell.hint {
-            color: var(--color-success);
+            color: #16a34a;
             animation: hintPulse 0.5s ease;
         }
         
         @keyframes hintPulse {
             0%, 100% { background-color: var(--color-bg-card); }
-            50% { background-color: #bbf7d0; }
+            50% { background-color: #dcfce7; }
         }
         
         /* 3x3 Block-Grenzen */
-        .sudoku-cell:nth-child(3n) { border-right: 2px solid var(--color-text); }
+        .sudoku-cell:nth-child(3n) { border-right: 2px solid #1e1b4b; }
         .sudoku-cell:nth-child(9n) { border-right: none; }
         .sudoku-cell:nth-child(n+19):nth-child(-n+27),
         .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
-            border-bottom: 2px solid var(--color-text);
+            border-bottom: 2px solid #1e1b4b;
         }
         
         /* Numpad */
@@ -386,50 +441,67 @@ function addSudokuStyles() {
             align-items: center;
             justify-content: center;
             font-size: var(--font-size-xl);
-            font-weight: 600;
+            font-weight: 700;
             background: var(--color-bg-card);
+            border: 2px solid var(--color-border);
             border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            transition: all var(--transition-fast);
+            color: var(--color-text);
+            transition: all 0.15s;
         }
         
         .sudoku-num-btn:active {
-            background: var(--color-primary);
+            background: #6366f1;
+            border-color: #6366f1;
             color: white;
             transform: scale(0.95);
         }
         
         .sudoku-num-btn.completed {
-            opacity: 0.4;
+            opacity: 0.3;
             pointer-events: none;
         }
         
         /* Aktionen */
         .sudoku-actions {
             display: flex;
-            gap: var(--spacing-md);
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+            justify-content: center;
         }
         
         .sudoku-action-btn {
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
+            gap: var(--spacing-xs);
             padding: var(--spacing-sm) var(--spacing-md);
             background: var(--color-bg-card);
             border: 2px solid var(--color-border);
             border-radius: var(--radius-md);
             font-size: var(--font-size-sm);
             font-weight: 600;
-            transition: all var(--transition-fast);
+            color: var(--color-text);
+            transition: all 0.15s;
         }
         
         .sudoku-action-btn:active {
             background: var(--color-border);
+            transform: scale(0.95);
         }
         
         .sudoku-action-btn:disabled {
             opacity: 0.4;
             pointer-events: none;
+        }
+        
+        /* NEU: Prüfen-Button aktiv */
+        .sudoku-action-btn.check-active {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        
+        .sudoku-action-btn.check-active i {
+            color: #f59e0b;
         }
         
         /* Gewonnen */
@@ -461,7 +533,7 @@ function addSudokuStyles() {
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 8px 30px rgba(251, 191, 36, 0.4);
             animation: bounce 1s ease infinite;
         }
         
@@ -478,6 +550,7 @@ function addSudokuStyles() {
         .complete-content h2 {
             font-size: var(--font-size-2xl);
             font-weight: 700;
+            color: var(--color-text);
         }
         
         .complete-stats {
@@ -500,12 +573,37 @@ function addSudokuStyles() {
             font-size: var(--font-size-xs);
             color: var(--color-text-muted);
             text-transform: uppercase;
+            font-weight: 600;
         }
         
         .complete-stat .stat-value {
             font-size: var(--font-size-lg);
             font-weight: 700;
-            color: var(--color-primary);
+            color: #6366f1;
+        }
+        
+        /* Dark Mode */
+        [data-theme="dark"] .sudoku-board {
+            background-color: #0f0a1e;
+            border-color: #0f0a1e;
+        }
+        
+        [data-theme="dark"] .sudoku-cell.initial {
+            background-color: #1e1b4b;
+            color: #e2e8f0;
+        }
+        
+        [data-theme="dark"] .sudoku-cell.selected {
+            background-color: #4338ca;
+        }
+        
+        [data-theme="dark"] .sudoku-cell.highlighted {
+            background-color: #3730a3;
+        }
+        
+        [data-theme="dark"] .sudoku-cell.error-visible {
+            background-color: #7f1d1d;
+            color: #fca5a5;
         }
     `;
     document.head.appendChild(style);
@@ -515,11 +613,27 @@ function addSudokuStyles() {
  * Setzt Event-Listener
  */
 function setupEventListeners() {
-    // Schwierigkeitsauswahl
-    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+    // ÄNDERUNG: Level-Buttons
+    document.querySelectorAll('.sudoku-level-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            startGame(btn.dataset.difficulty);
+            document.querySelectorAll('.sudoku-level-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.difficulty = parseInt(btn.dataset.level);
+            updateLevelInfo();
         });
+    });
+    
+    // Standard: Level 1 ausgewählt
+    const firstLevelBtn = document.querySelector('.sudoku-level-btn[data-level="1"]');
+    if (firstLevelBtn) {
+        firstLevelBtn.classList.add('selected');
+        state.difficulty = 1;
+        updateLevelInfo();
+    }
+    
+    // NEU: Start-Button
+    document.getElementById('btn-sudoku-start').addEventListener('click', () => {
+        startGame(state.difficulty);
     });
     
     // Numpad
@@ -533,6 +647,7 @@ function setupEventListeners() {
     // Aktionen
     document.getElementById('btn-sudoku-hint').addEventListener('click', useHint);
     document.getElementById('btn-sudoku-erase').addEventListener('click', eraseCell);
+    document.getElementById('btn-sudoku-check').addEventListener('click', toggleErrorCheck);
     document.getElementById('btn-sudoku-new').addEventListener('click', showMenu);
     document.getElementById('btn-sudoku-menu').addEventListener('click', showMenu);
     
@@ -541,10 +656,20 @@ function setupEventListeners() {
 }
 
 /**
+ * Aktualisiert Level-Info Anzeige
+ */
+function updateLevelInfo() {
+    const config = LEVEL_SETTINGS[state.difficulty];
+    document.getElementById('sudoku-level-cells').textContent = `${config.remove} leere Felder`;
+    document.getElementById('sudoku-level-hints').textContent = `${config.hints} Hinweise`;
+}
+
+/**
  * Zeigt das Menü
  */
 function showMenu() {
     stopTimer();
+    state.showErrors = false;
     
     document.getElementById('sudoku-menu').classList.remove('hidden');
     document.getElementById('sudoku-game').classList.add('hidden');
@@ -553,14 +678,19 @@ function showMenu() {
 
 /**
  * Startet ein neues Spiel
+ * @param {number} difficulty - Level 1-10
  */
 function startGame(difficulty) {
+    const config = LEVEL_SETTINGS[difficulty];
+    
     state.difficulty = difficulty;
-    state.hints = DIFFICULTY[difficulty].hints;
+    state.hints = config.hints;
+    state.hintsUsed = 0;
     state.errors = 0;
     state.elapsed = 0;
     state.isComplete = false;
     state.selectedCell = null;
+    state.showErrors = false;
     
     // Puzzle generieren
     generatePuzzle();
@@ -571,7 +701,13 @@ function startGame(difficulty) {
     document.getElementById('sudoku-complete').classList.add('hidden');
     
     document.getElementById('sudoku-hints').textContent = state.hints;
-    document.getElementById('sudoku-errors').textContent = state.errors;
+    document.getElementById('sudoku-level-display').textContent = difficulty;
+    
+    // Prüfen-Button zurücksetzen
+    document.getElementById('btn-sudoku-check').classList.remove('check-active');
+    
+    // Hint-Button aktualisieren
+    document.getElementById('btn-sudoku-hint').disabled = state.hints === 0;
     
     renderBoard();
     startTimer();
@@ -581,19 +717,16 @@ function startGame(difficulty) {
  * Generiert ein neues Sudoku-Puzzle
  */
 function generatePuzzle() {
-    // Leeres 9x9 Grid erstellen
     state.solution = Array(9).fill(null).map(() => Array(9).fill(0));
     
-    // Lösung generieren
     solveSudoku(state.solution);
     
-    // Puzzle erstellen (Kopie der Lösung)
     state.puzzle = state.solution.map(row => [...row]);
     state.userGrid = state.solution.map(row => [...row]);
     state.initial = Array(9).fill(null).map(() => Array(9).fill(false));
     
-    // Zellen entfernen basierend auf Schwierigkeit
-    const toRemove = DIFFICULTY[state.difficulty].remove;
+    const config = LEVEL_SETTINGS[state.difficulty];
+    const toRemove = config.remove;
     let removed = 0;
     
     while (removed < toRemove) {
@@ -607,7 +740,6 @@ function generatePuzzle() {
         }
     }
     
-    // Markiere initiale Zellen
     for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
             state.initial[row][col] = state.puzzle[row][col] !== 0;
@@ -658,15 +790,12 @@ function findEmptyCell(grid) {
  * Prüft ob eine Zahl an einer Position gültig ist
  */
 function isValidPlacement(grid, row, col, num) {
-    // Zeile prüfen
     if (grid[row].includes(num)) return false;
     
-    // Spalte prüfen
     for (let r = 0; r < 9; r++) {
         if (grid[r][col] === num) return false;
     }
     
-    // 3x3 Block prüfen
     const blockRow = Math.floor(row / 3) * 3;
     const blockCol = Math.floor(col / 3) * 3;
     
@@ -715,6 +844,10 @@ function renderBoard() {
                 cell.classList.add('initial');
             } else if (value !== 0) {
                 cell.classList.add('user-input');
+                // ÄNDERUNG: Fehler nur anzeigen wenn showErrors aktiv
+                if (state.showErrors && value !== state.solution[row][col]) {
+                    cell.classList.add('error-visible');
+                }
             }
             
             cell.addEventListener('click', () => selectCell(row, col));
@@ -734,18 +867,15 @@ function selectCell(row, col) {
     
     state.selectedCell = { row, col };
     
-    // Alle Markierungen entfernen
     document.querySelectorAll('.sudoku-cell').forEach(cell => {
         cell.classList.remove('selected', 'highlighted');
     });
     
-    // Ausgewählte Zelle markieren
     const selectedEl = document.querySelector(
         `.sudoku-cell[data-row="${row}"][data-col="${col}"]`
     );
     selectedEl.classList.add('selected');
     
-    // Gleiche Zahlen hervorheben
     const value = state.userGrid[row][col];
     if (value !== 0) {
         document.querySelectorAll('.sudoku-cell').forEach(cell => {
@@ -766,32 +896,28 @@ function enterNumber(num) {
     
     const { row, col } = state.selectedCell;
     
-    // Initiale Zellen können nicht geändert werden
     if (state.initial[row][col]) return;
     
-    // Zahl eintragen
     state.userGrid[row][col] = num;
     
-    // Zelle aktualisieren
     const cell = document.querySelector(
         `.sudoku-cell[data-row="${row}"][data-col="${col}"]`
     );
     cell.textContent = num;
     cell.classList.add('user-input');
-    cell.classList.remove('error', 'hint');
+    cell.classList.remove('error-visible', 'hint');
     
-    // Prüfen ob korrekt
+    // ÄNDERUNG: Fehler nur zählen, aber nicht anzeigen (außer showErrors aktiv)
     if (num !== state.solution[row][col]) {
-        cell.classList.add('error');
         state.errors++;
-        document.getElementById('sudoku-errors').textContent = state.errors;
+        if (state.showErrors) {
+            cell.classList.add('error-visible');
+        }
     }
     
-    // Hervorhebungen aktualisieren
     selectCell(row, col);
     updateCompletedNumbers();
     
-    // Prüfen ob fertig
     checkCompletion();
 }
 
@@ -811,9 +937,45 @@ function eraseCell() {
         `.sudoku-cell[data-row="${row}"][data-col="${col}"]`
     );
     cell.textContent = '';
-    cell.classList.remove('user-input', 'error', 'hint');
+    cell.classList.remove('user-input', 'error-visible', 'hint');
     
     updateCompletedNumbers();
+}
+
+/**
+ * NEU: Fehlerprüfung an/aus schalten
+ */
+function toggleErrorCheck() {
+    state.showErrors = !state.showErrors;
+    
+    const checkBtn = document.getElementById('btn-sudoku-check');
+    checkBtn.classList.toggle('check-active', state.showErrors);
+    
+    // Board neu rendern mit/ohne Fehleranzeige
+    updateErrorDisplay();
+}
+
+/**
+ * NEU: Aktualisiert Fehleranzeige
+ */
+function updateErrorDisplay() {
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            const cell = document.querySelector(
+                `.sudoku-cell[data-row="${row}"][data-col="${col}"]`
+            );
+            
+            if (!state.initial[row][col] && state.userGrid[row][col] !== 0) {
+                const isWrong = state.userGrid[row][col] !== state.solution[row][col];
+                
+                if (state.showErrors && isWrong) {
+                    cell.classList.add('error-visible');
+                } else {
+                    cell.classList.remove('error-visible');
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -822,7 +984,6 @@ function eraseCell() {
 function useHint() {
     if (state.hints <= 0 || state.isComplete) return;
     
-    // Finde eine leere oder falsche Zelle
     const emptyCells = [];
     
     for (let row = 0; row < 9; row++) {
@@ -836,13 +997,12 @@ function useHint() {
     
     if (emptyCells.length === 0) return;
     
-    // Zufällige Zelle wählen
     const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
     const { row, col } = randomCell;
     
-    // Lösung eintragen
     state.userGrid[row][col] = state.solution[row][col];
     state.hints--;
+    state.hintsUsed = (state.hintsUsed || 0) + 1;
     
     document.getElementById('sudoku-hints').textContent = state.hints;
     
@@ -850,19 +1010,16 @@ function useHint() {
         document.getElementById('btn-sudoku-hint').disabled = true;
     }
     
-    // Zelle aktualisieren
     const cell = document.querySelector(
         `.sudoku-cell[data-row="${row}"][data-col="${col}"]`
     );
     cell.textContent = state.solution[row][col];
-    cell.classList.remove('error');
+    cell.classList.remove('error-visible');
     cell.classList.add('user-input', 'hint');
     
-    // Auswählen
     selectCell(row, col);
     updateCompletedNumbers();
     
-    // Prüfen ob fertig
     checkCompletion();
 }
 
@@ -899,7 +1056,6 @@ function checkCompletion() {
         }
     }
     
-    // Puzzle gelöst!
     state.isComplete = true;
     stopTimer();
     showCompletion();
@@ -913,10 +1069,9 @@ function showCompletion() {
     document.getElementById('sudoku-complete').classList.remove('hidden');
     
     document.getElementById('complete-time').textContent = formatTime(state.elapsed);
-    document.getElementById('complete-errors').textContent = state.errors;
-    document.getElementById('complete-difficulty').textContent = DIFFICULTY[state.difficulty].name;
+    document.getElementById('complete-level').textContent = state.difficulty;
+    document.getElementById('complete-hints-used').textContent = state.hintsUsed || 0;
     
-    // Ergebnis speichern (falls Storage-Modul verfügbar)
     saveSudokuResult();
 }
 
@@ -931,9 +1086,10 @@ function saveSudokuResult() {
         
         data.games++;
         
-        const currentBest = data.bestTimes[state.difficulty] || Infinity;
+        const levelKey = `level_${state.difficulty}`;
+        const currentBest = data.bestTimes[levelKey] || Infinity;
         if (state.elapsed < currentBest) {
-            data.bestTimes[state.difficulty] = state.elapsed;
+            data.bestTimes[levelKey] = state.elapsed;
         }
         
         localStorage.setItem(key, JSON.stringify(data));
@@ -977,7 +1133,6 @@ function formatTime(seconds) {
  * Keyboard-Handler
  */
 function handleKeyboard(e) {
-    // Nur wenn Sudoku-Screen aktiv
     const sudokuScreen = document.getElementById('sudoku-screen');
     if (!sudokuScreen || !sudokuScreen.classList.contains('active')) return;
     
@@ -985,17 +1140,14 @@ function handleKeyboard(e) {
     
     const { row, col } = state.selectedCell;
     
-    // Zahlen 1-9
     if (e.key >= '1' && e.key <= '9') {
         enterNumber(parseInt(e.key));
     }
     
-    // Löschen
     if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') {
         eraseCell();
     }
     
-    // Navigation
     if (e.key === 'ArrowUp' && row > 0) selectCell(row - 1, col);
     if (e.key === 'ArrowDown' && row < 8) selectCell(row + 1, col);
     if (e.key === 'ArrowLeft' && col > 0) selectCell(row, col - 1);
@@ -1006,16 +1158,13 @@ function handleKeyboard(e) {
  * Zeigt den Sudoku-Screen
  */
 export function show() {
-    // Alle anderen Screens ausblenden
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
     });
     
-    // Sudoku-Screen einblenden
     const sudokuScreen = document.getElementById('sudoku-screen');
     sudokuScreen.classList.add('active');
     
-    // Header aktualisieren
     document.getElementById('header-title').textContent = 'Sudoku';
     document.getElementById('btn-back').classList.remove('hidden');
     document.getElementById('btn-stats').classList.add('hidden');

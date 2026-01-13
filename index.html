@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="description" content="BrainFit – 9 Gedächtnisspiele für Gehirntraining">
+    <meta name="description" content="BrainFit – 18 Gehirntraining-Spiele">
     <title>BrainFit – Logikspiele</title>
     
     <!-- Font Awesome -->
@@ -33,14 +33,13 @@
                     <i class="fas fa-brain"></i>
                 </div>
                 <h2>Wähle dein Training</h2>
-                <p class="subtitle">9 Spiele – 10 Level – Unendliche Herausforderung</p>
+                <p class="subtitle">18 Spiele – 10 Level – Unendliche Herausforderung</p>
             </div>
 
             <div class="game-grid">
+                <!-- Normale Spiele mit Level 1-10 -->
                 <button class="game-card" data-game="numbers">
-                    <div class="game-icon">
-                        <i class="fas fa-hashtag"></i>
-                    </div>
+                    <div class="game-icon"><i class="fas fa-hashtag"></i></div>
                     <div class="game-info">
                         <h3>Zahlenfolge</h3>
                         <p>Merke dir die Zahlenreihe</p>
@@ -52,9 +51,7 @@
                 </button>
 
                 <button class="game-card" data-game="letters">
-                    <div class="game-icon">
-                        <i class="fas fa-font"></i>
-                    </div>
+                    <div class="game-icon"><i class="fas fa-font"></i></div>
                     <div class="game-info">
                         <h3>Buchstabenfolge</h3>
                         <p>Merke dir die Buchstaben</p>
@@ -66,9 +63,7 @@
                 </button>
 
                 <button class="game-card" data-game="colors">
-                    <div class="game-icon">
-                        <i class="fas fa-palette"></i>
-                    </div>
+                    <div class="game-icon"><i class="fas fa-palette"></i></div>
                     <div class="game-info">
                         <h3>Farbsequenz</h3>
                         <p>Senso-Style Farbmerken</p>
@@ -80,9 +75,7 @@
                 </button>
 
                 <button class="game-card" data-game="pattern">
-                    <div class="game-icon">
-                        <i class="fas fa-th"></i>
-                    </div>
+                    <div class="game-icon"><i class="fas fa-th"></i></div>
                     <div class="game-info">
                         <h3>Muster-Memory</h3>
                         <p>Merke dir das Muster</p>
@@ -94,9 +87,7 @@
                 </button>
 
                 <button class="game-card" data-game="math">
-                    <div class="game-icon">
-                        <i class="fas fa-calculator"></i>
-                    </div>
+                    <div class="game-icon"><i class="fas fa-calculator"></i></div>
                     <div class="game-info">
                         <h3>Rechenfolge</h3>
                         <p>Merke dir die Ergebnisse</p>
@@ -107,10 +98,105 @@
                     </div>
                 </button>
 
-                <button class="game-card" data-game="sudoku">
-                    <div class="game-icon">
-                        <i class="fas fa-table-cells"></i>
+                <button class="game-card" data-game="wordscramble">
+                    <div class="game-icon"><i class="fas fa-shuffle"></i></div>
+                    <div class="game-info">
+                        <h3>Wort-Anagramm</h3>
+                        <p>Sortiere Buchstaben richtig</p>
                     </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="wordscramble">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="hangman">
+                    <div class="game-icon"><i class="fas fa-person"></i></div>
+                    <div class="game-info">
+                        <h3>Galgenmännchen</h3>
+                        <p>Erraten Sie das Wort</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="hangman">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="dodge">
+                    <div class="game-icon"><i class="fas fa-car"></i></div>
+                    <div class="game-info">
+                        <h3>Dodge Master</h3>
+                        <p>Weiche Autos aus</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="dodge">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="millionaire">
+                    <div class="game-icon"><i class="fas fa-star"></i></div>
+                    <div class="game-info">
+                        <h3>Millionär Quiz</h3>
+                        <p>Beantworte Fragen richtig</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="millionaire">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="memory">
+                    <div class="game-icon"><i class="fas fa-brain"></i></div>
+                    <div class="game-info">
+                        <h3>Memory</h3>
+                        <p>Finde die passenden Paare</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="memory">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="patternbreaker">
+                    <div class="game-icon"><i class="fas fa-layer-group"></i></div>
+                    <div class="game-info">
+                        <h3>Pattern Breaker</h3>
+                        <p>Erkenne mathematische Muster</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="patternbreaker">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="flipmaster">
+                    <div class="game-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="game-info">
+                        <h3>Flip Master</h3>
+                        <p>Klicke Karten im richtigen Tempo</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="flipmaster">0</span>
+                    </div>
+                </button>
+
+                <button class="game-card" data-game="iqmaster">
+                    <div class="game-icon"><i class="fas fa-brain"></i></div>
+                    <div class="game-info">
+                        <h3>IQ Master</h3>
+                        <p>Echte mathematische & logische Muster</p>
+                    </div>
+                    <div class="game-highscore">
+                        <i class="fas fa-trophy"></i>
+                        <span data-highscore="iqmaster">0</span>
+                    </div>
+                </button>
+
+                <!-- Spezielle Spiele ohne Level -->
+                <button class="game-card" data-game="sudoku">
+                    <div class="game-icon"><i class="fas fa-table-cells"></i></div>
                     <div class="game-info">
                         <h3>Sudoku</h3>
                         <p>Klassisches Zahlenrätsel</p>
@@ -122,9 +208,7 @@
                 </button>
 
                 <button class="game-card" data-game="chain">
-                    <div class="game-icon">
-                        <i class="fas fa-link"></i>
-                    </div>
+                    <div class="game-icon"><i class="fas fa-link"></i></div>
                     <div class="game-info">
                         <h3>Reaktions-Ketten</h3>
                         <p>Tippe Symbole in Reihenfolge</p>
@@ -136,9 +220,7 @@
                 </button>
 
                 <button class="game-card" data-game="mindmaze">
-                    <div class="game-icon">
-                        <i class="fas fa-brain"></i>
-                    </div>
+                    <div class="game-icon"><i class="fas fa-brain"></i></div>
                     <div class="game-info">
                         <h3>Mind Maze</h3>
                         <p>Gedächtnis-Labyrinth</p>
@@ -149,21 +231,17 @@
                     </div>
                 </button>
 
-                <!-- NEU: Tower Defense -->
                 <button class="game-card" data-game="towerdefense">
-                    <div class="game-icon">
-                        <i class="fas fa-chess-rook"></i>
-                    </div>
+                    <div class="game-icon"><i class="fas fa-chess-rook"></i></div>
                     <div class="game-info">
                         <h3>BrainTower</h3>
-                        <p>Tower Defense Gehirntraining</p>
+                        <p>Tower Defense mit 10 Maps</p>
                     </div>
                     <div class="game-highscore">
                         <i class="fas fa-trophy"></i>
-                        <span data-highscore="tower">-</span>
+                        <span data-highscore="towerdefense">-</span>
                     </div>
                 </button>
-
             </div>
 
             <div class="menu-footer">
@@ -346,7 +424,7 @@
                             <i class="fas fa-brain"></i>
                         </div>
                         <h3>Willkommen bei BrainFit!</h3>
-                        <p>Trainiere dein Gedächtnis mit 9 verschiedenen Spielen. Jedes Spiel fordert unterschiedliche kognitive Fähigkeiten.</p>
+                        <p>Trainiere dein Gedächtnis mit 18 verschiedenen Spielen. Jedes Spiel fordert unterschiedliche kognitive Fähigkeiten.</p>
                     </div>
                     <div class="tutorial-slide" data-slide="1">
                         <div class="tutorial-icon">

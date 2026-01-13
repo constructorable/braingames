@@ -1,32 +1,51 @@
 /* =========================================
-   BrainFit – Haupt-App-Controller
-   Verbindet alle Module und steuert den Spielfluss
+   BrainFit – Haupt-App-Controller (optimiert)
+   Kompakte, wartbare Struktur
    ========================================= */
 
 import * as UI from './ui.js';
 import * as Storage from './storage.js';
 import * as Stats from './stats.js';
+import * as Theme from './theme.js';
 
-// Spiel-Module dynamisch importieren
+// Game-Module
 import * as NumberGame from './numberSequence.js';
 import * as LetterGame from './letterSequence.js';
 import * as ColorGame from './colorSequence.js';
 import * as PatternGame from './patternMemory.js';
 import * as MathGame from './mathSequence.js';
+import * as WordScramble from './wordScramble.js';
+import * as Hangman from './hangman.js';
+import * as Dodge from './dodge.js';
+import * as Millionaire from './millionaire.js';
+import * as Memory from './memory.js';
+import * as PatternBreaker from './patternbreaker.js';
+import * as FlipMaster from './flipmaster.js';
+import * as IQMaster from './iqmaster.js';
 import * as Sudoku from './sudoku.js';
 import * as ChainReaction from './chainReaction.js';
 import * as MindMaze from './mindMaze.js';
 import * as towerdefense from './towerdefense.js';
-import * as Theme from './theme.js';
 
-// Spiele-Registry
+// Spiele-Konfiguration (mit Level-Auswahl)
 const GAMES = {
     numbers: { module: NumberGame, title: 'Zahlenfolge' },
     letters: { module: LetterGame, title: 'Buchstabenfolge' },
     colors: { module: ColorGame, title: 'Farbsequenz' },
     pattern: { module: PatternGame, title: 'Muster-Memory' },
-    math: { module: MathGame, title: 'Rechenfolge' }
+    math: { module: MathGame, title: 'Rechenfolge' },
+    wordscramble: { module: WordScramble, title: 'Wort-Anagramm' },
+    hangman: { module: Hangman, title: 'Galgenmännchen' },
+    dodge: { module: Dodge, title: 'Dodge Master' },
+    millionaire: { module: Millionaire, title: 'Millionär Quiz' },
+    memory: { module: Memory, title: 'Memory' },
+    patternbreaker: { module: PatternBreaker, title: 'Pattern Breaker' },
+    flipmaster: { module: FlipMaster, title: 'Flip Master' },
+    iqmaster: { module: IQMaster, title: 'IQ Master' }
 };
+
+// Spiele mit spezialer Initialisierung
+const SPECIAL_GAMES = ['sudoku', 'chain', 'mindmaze', 'towerdefense'];
 
 // App-State
 const appState = {
@@ -35,99 +54,70 @@ const appState = {
     selectedMode: 'endless'
 };
 
-/**
- * App initialisieren
- */
+// ÄNDERUNG: Init mit Event-Delegation statt mehrfacher Listener
 function init() {
-    Theme.init();  // NEU: Theme als erstes initialisieren
+    Theme.init();
     UI.init();
-    setupEventListeners();
-    checkFirstVisit();
-    
-    console.log('BrainFit App initialisiert');
-}
-
-/**
- * Setzt alle Event-Listener
- */
-function setupEventListeners() {
-    // Spielkarten im Hauptmenü
-
-
-    document.querySelectorAll('.game-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const gameId = card.dataset.game;
-            if (gameId === 'sudoku') {
-                Sudoku.init();
-                Sudoku.show();
-            } else if (gameId === 'chain') {
-                ChainReaction.init();
-                ChainReaction.show();
-            } else if (gameId === 'mindmaze') {
-                MindMaze.init();
-                MindMaze.show();
-            } else if (gameId === 'towerdefense') {
-                towerdefense.init();
-                towerdefense.show();
-            } else {
-                selectGame(gameId);
-            }
-        });
-    });
-
-
-
-
-    // Tutorial-Button
-    document.getElementById('btn-tutorial').addEventListener('click', () => {
-        UI.openTutorial();
-    });
-
-    // Statistiken-Button
-    document.getElementById('btn-stats').addEventListener('click', () => {
-        showStats();
-    });
-
-    // Modus-Auswahl
-    document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            selectMode(btn.dataset.mode);
-        });
-    });
-
-    // Spiel starten
-    document.getElementById('btn-start-game').addEventListener('click', () => {
-        startGame();
-    });
-
-    // Ergebnis-Aktionen
-    document.getElementById('btn-play-again').addEventListener('click', () => {
-        startGame();
-    });
-
-    document.getElementById('btn-back-menu').addEventListener('click', () => {
-        returnToMenu();
-    });
-
-    // Statistik-Events
-    Stats.setupStatsEvents(() => {
-        UI.updateHighscoreDisplays();
-    });
-}
-
-/**
- * Prüft ob erster Besuch und zeigt Tutorial
- */
-function checkFirstVisit() {
+    setupEventDelegation();
     if (Storage.isFirstVisit()) {
-        setTimeout(() => {
-            UI.openTutorial();
-        }, 500);
+        setTimeout(() => UI.openTutorial(), 500);
     }
 }
 
 /**
- * Wählt ein Spiel aus und zeigt Modus-Auswahl
+ * ÄNDERUNG: Event-Delegation statt einzelner Listener
+ * Reduziert Code und ist performanter
+ */
+function setupEventDelegation() {
+    // Haupt-Delegator für UI-Events
+    document.addEventListener('click', (e) => {
+        const gameCard = e.target.closest('.game-card');
+        const modeBtn = e.target.closest('.mode-btn');
+        const btn = e.target.closest('button[id]');
+
+        if (gameCard) {
+            handleGameCardClick(gameCard.dataset.game);
+        } else if (modeBtn) {
+            selectMode(modeBtn.dataset.mode);
+        } else if (btn?.id === 'btn-tutorial') {
+            UI.openTutorial();
+        } else if (btn?.id === 'btn-stats') {
+            Stats.renderStats();
+            UI.showScreen('stats-screen', { title: 'Statistiken' });
+        } else if (btn?.id === 'btn-start-game') {
+            startGame();
+        } else if (btn?.id === 'btn-play-again') {
+            startGame();
+        } else if (btn?.id === 'btn-back-menu') {
+            returnToMenu();
+        }
+    });
+
+    // Stats-Events einmalig
+    Stats.setupStatsEvents(() => UI.updateHighscoreDisplays());
+}
+
+/**
+ * ÄNDERUNG: Vereinheitlichte Game-Card Behandlung
+ */
+function handleGameCardClick(gameId) {
+    // NEU: Dynamische Module für spezielle Spiele
+    const specialInit = {
+        sudoku: () => { Sudoku.init(); Sudoku.show(); },
+        chain: () => { ChainReaction.init(); ChainReaction.show(); },
+        mindmaze: () => { MindMaze.init(); MindMaze.show(); },
+        towerdefense: () => { towerdefense.init(); towerdefense.show(); }
+    };
+
+    if (specialInit[gameId]) {
+        specialInit[gameId]();
+    } else {
+        selectGame(gameId);
+    }
+}
+
+/**
+ * Wählt ein normales Spiel aus
  */
 function selectGame(gameId) {
     if (!GAMES[gameId]) return;
@@ -136,36 +126,33 @@ function selectGame(gameId) {
     appState.selectedLevel = 1;
     appState.selectedMode = 'endless';
 
-    // Titel setzen
     document.getElementById('mode-game-title').textContent = GAMES[gameId].title;
-
-    // Level-Buttons rendern
     UI.renderLevelButtons(10, appState.selectedLevel, (level) => {
         appState.selectedLevel = level;
     });
-
-    // Standard-Modus markieren
-    document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.mode === appState.selectedMode);
-    });
-
-    // Screen wechseln
+    updateModeBtns('endless');
     UI.showScreen('mode-select', { title: GAMES[gameId].title });
 }
 
 /**
- * Wählt einen Spielmodus
+ * ÄNDERUNG: Vereinfachte Mode-Auswahl
  */
 function selectMode(mode) {
     appState.selectedMode = mode;
+    updateModeBtns(mode);
+}
 
+/**
+ * ÄNDERUNG: DRY - Helper für Mode-Button Update
+ */
+function updateModeBtns(selected) {
     document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.mode === mode);
+        btn.classList.toggle('selected', btn.dataset.mode === selected);
     });
 }
 
 /**
- * Startet das ausgewählte Spiel
+ * Startet das Spiel
  */
 function startGame() {
     const game = GAMES[appState.currentGame];
@@ -174,15 +161,12 @@ function startGame() {
     UI.resetHistory();
     UI.showScreen('game-area', { title: game.title });
 
-    // Spiel starten
     game.module.start(
         {
             level: appState.selectedLevel,
             mode: appState.selectedMode
         },
-        {
-            onComplete: handleGameComplete
-        }
+        { onComplete: handleGameComplete }
     );
 }
 
@@ -190,20 +174,13 @@ function startGame() {
  * Behandelt Spielende
  */
 function handleGameComplete(result) {
-    // Highscore prüfen und speichern
     const isNewHighscore = Storage.updateHighscore(result.game, result.score);
-    const currentHighscore = Storage.getHighscore(result.game);
-
-    // Ergebnis speichern
     Storage.addGameResult(result);
-
-    // Highscore-Anzeigen aktualisieren
+    
     UI.updateHighscoreDisplays();
-
-    // Ergebnis-Screen anzeigen
     UI.renderResult({
         score: result.score,
-        highscore: currentHighscore,
+        highscore: Storage.getHighscore(result.game),
         round: result.round,
         isNewHighscore
     });
@@ -212,33 +189,26 @@ function handleGameComplete(result) {
 }
 
 /**
- * Zeigt Statistiken
- */
-function showStats() {
-    Stats.renderStats();
-    UI.showScreen('stats-screen', { title: 'Statistiken' });
-}
-
-/**
- * Kehrt zum Hauptmenü zurück
+ * ÄNDERUNG: Kompaktere Rückkehr zum Menü
  */
 function returnToMenu() {
-    // Laufendes Spiel stoppen
+    // Aktuelles Spiel stoppen
     if (appState.currentGame && GAMES[appState.currentGame]) {
         GAMES[appState.currentGame].module.stop();
     }
 
-    // NEU: Sudoku ausblenden
-    Sudoku.hide();
-    ChainReaction.hide();
-    MindMaze.hide();
-    towerdefense.hide();
+    // Spezielle Spiele ausblenden (nur wenn vorhanden)
+    [Sudoku, ChainReaction, MindMaze, towerdefense].forEach(game => {
+        game?.hide?.();
+    });
 
     UI.resetHistory();
     UI.showScreen('main-menu', { addToHistory: false });
 }
 
-// App starten wenn DOM bereit
+/**
+ * App-Start
+ */
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {

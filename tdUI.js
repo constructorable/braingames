@@ -414,8 +414,17 @@ function addStyles() {
             margin:0 auto;
             aspect-ratio: 9 / 16;
             flex-shrink:0;
+            touch-action: none; /* NEU: Verhindert Browser-Gesten auf Canvas */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
-        #td-canvas { width:100%; height:100%; display:block; }
+        #td-canvas { 
+            width:100%; 
+            height:100%; 
+            display:block; 
+            touch-action: none; /* NEU: Touch-Events nur für Spiel */
+        }
 
         .td-tower-info { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(15,23,42,0.95); border:1px solid rgba(255,255,255,0.1); border-radius:var(--radius-md); padding:var(--spacing-sm); min-width:200px; backdrop-filter:blur(10px); z-index:10; }
         .td-tower-info.hidden { display:none; }

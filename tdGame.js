@@ -577,22 +577,47 @@ export function initGame(mapId) {
         const pathData = calculatePathData(mapId, width, height);
         State.setPathData(pathData);
 
-        // Canvas-Click Handler
+        // ÄNDERUNG: Click und Touch Handler für Desktop und Mobile
         canvas.onclick = handleCanvasClick;
+        canvas.ontouchstart = handleCanvasTouch;
 
         State.setLastFrameTime(performance.now());
         State.setGameLoop(requestAnimationFrame(gameLoop));
     });
 }
 
-// NEU: Canvas-Click Handler
-function handleCanvasClick(e) {
-    const state = State.getState();
+// NEU: Canvas-Touch Handler für mobile Geräte
+function handleCanvasTouch(e) {
+    e.preventDefault(); // Verhindert Scrollen und Zoom
+    
+    if (e.touches.length === 0) return;
+    
+    const touch = e.touches[0];
     const canvas = State.getCanvas();
+    const { width, height } = State.getCanvasDimensions();
     
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const x = (touch.clientX - rect.left) * (width / rect.width);
+    const y = (touch.clientY - rect.top) * (height / rect.height);
+    
+    handleCanvasInput(x, y);
+}
+
+// NEU: Canvas-Click Handler
+function handleCanvasClick(e) {
+    const canvas = State.getCanvas();
+    const { width, height } = State.getCanvasDimensions();
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (width / rect.width);
+    const y = (e.clientY - rect.top) * (height / rect.height);
+
+    handleCanvasInput(x, y);
+}
+
+// NEU: Gemeinsame Input-Verarbeitung für Click und Touch
+function handleCanvasInput(x, y) {
+    const state = State.getState();
 
     if (state.selectedTowerType) {
         placeTower(x, y);
